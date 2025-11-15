@@ -1,5 +1,5 @@
-import { createContext, useContext, useReducer, type Dispatch, type ReactNode } from 'react';
-import { TreeDanglerState, MaskPolygon } from '../types';
+import { createContext, useContext, useReducer, useEffect, useRef, type Dispatch, type ReactNode } from 'react';
+import { TreeDanglerState, MaskPolygon, LineSegment, Polygon } from '../types';
 
 // Action types
 type Action =
@@ -71,6 +71,7 @@ const TreeDanglerContext = createContext<TreeDanglerContextValue | undefined>(un
 // Provider component
 export function TreeDanglerProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(reducer, initialState);
+  useVoronoiAutoCompute(state.mask, state.segments, dispatch);
 
   return (
     <TreeDanglerContext.Provider value={{ state, dispatch }}>
@@ -86,4 +87,49 @@ export function useTreeDanglerState() {
     throw new Error('useTreeDanglerState must be used within a TreeDanglerProvider');
   }
   return context;
+}
+
+interface VoronoiWorkerMessage {
+  id: number;
+  polygons?: Polygon[];
+  error?: string;
+}
+
+function useVoronoiAutoCompute(mask: MaskPolygon, segments: LineSegment[], dispatch: Dispatch<Action>) {
+  const workerRef = useRef<Worker | null>(null);
+  const requestIdRef = useRef(0);
+  const latestCompletedRef = useRef(0);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const worker = new Worker(new URL('../workers/voronoiWorker.ts', import.meta.url), { type: 'module' });
+    workerRef.current = worker;
+    worker.onmessage = (event: MessageEvent<VoronoiWorkerMessage>) => {
+      const { id, polygons, error } = event.data;
+      if (error) {
+        console.error('Voronoi worker error:', error);
+        return;
+      }
+      if (!polygons || id < latestCompletedRef.current) {
+        return;
+      }
+      latestCompletedRef.current = id;
+      dispatch({ type: 'SET_VORONOI_POLYGONS', payload: polygons });
+    };
+    return () => {
+      workerRef.current = null;
+      worker.terminate();
+    };
+  }, [dispatch]);
+
+  useEffect(() => {
+    if (!workerRef.current) return;
+    const id = requestIdRef.current + 1;
+    requestIdRef.current = id;
+    workerRef.current.postMessage({
+      id,
+      mask,
+      segments,
+    });
+  }, [mask, segments]);
 }

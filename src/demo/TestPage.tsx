@@ -2,6 +2,7 @@ import { useCallback, useState } from "react";
 
 import { MaskPane } from "../lib/panes/MaskPane";
 import { SegmentInputPane } from "../lib/panes/SegmentInputPane";
+import { VoronoiPane } from "../lib/panes/VoronoiPane";
 import { TreeDanglerProvider, useTreeDanglerState } from "../lib/state/store";
 import { CanvasPane, type PointerEventData } from "../lib/ui/CanvasPane";
 
@@ -20,7 +21,7 @@ const callouts = [
   "Shared context + reducer",
   "Canvas-first panes",
   "SSR-safe React components",
-  "1px = 0.1mm metric grid",
+  "1 px = 0.2 mm metric grid",
 ];
 
 function CanvasDemo() {
@@ -151,7 +152,7 @@ function MaskPaneCard() {
           </p>
           <h2 className="text-2xl font-semibold text-white">Mask Editor</h2>
           <p className="text-sm text-slate-300">
-            600 × 600 px canvas ⇒ 60 × 60 mm workspace. Click points to select,
+            600 × 600 px canvas ⇒ 120 × 120 mm workspace. Click points to select,
             edges to insert, Delete to remove.
           </p>
         </div>
@@ -178,26 +179,71 @@ function MaskPaneCard() {
 function SegmentPaneCard() {
   const width = 600;
   const height = 600;
+  const { state } = useTreeDanglerState();
 
   return (
     <div className="rounded-3xl border border-sky-900/40 bg-slate-900/60 p-6 shadow-2xl shadow-black/40">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.4em] text-sky-300">
             Module 1
           </p>
           <h2 className="text-2xl font-semibold text-white">Segment Input</h2>
           <p className="text-sm text-slate-300">
-            Same 60 × 60 mm frame with shared state: click canvas to add a
+            Same 120 × 120 mm frame with shared state: click canvas to add a
             segment, drag endpoints/body, double-click label to edit.
           </p>
         </div>
-        <div className="rounded-lg border border-sky-500/30 px-3 py-1 text-xs text-sky-200">
-          {width}×{height}
+        <div className="flex flex-col items-end gap-2 text-right">
+          <div className="rounded-lg border border-sky-500/30 px-3 py-1 text-xs text-sky-200">
+            {width}×{height}
+          </div>
+          <p className="text-xs text-slate-400">
+            {state.segments.length
+              ? `${state.segments.length} segment${
+                  state.segments.length === 1 ? "" : "s"
+                }`
+              : "No segments yet"}
+          </p>
         </div>
       </div>
       <div className="mt-6 flex justify-center">
         <SegmentInputPane
+          width={width}
+          height={height}
+          className="rounded-2xl border border-slate-800"
+        />
+      </div>
+    </div>
+  );
+}
+
+function VoronoiPaneCard() {
+  const width = 600;
+  const height = 600;
+  const { state } = useTreeDanglerState();
+
+  return (
+    <div className="rounded-3xl border border-fuchsia-900/40 bg-slate-900/60 p-6 shadow-2xl shadow-black/40">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.4em] text-fuchsia-300">
+            Module 2
+          </p>
+          <h2 className="text-2xl font-semibold text-white">Voronoi Preview</h2>
+          <p className="text-sm text-slate-300">
+            Visualize merged Voronoi regions for each segment to inspect
+            coverage before rasterizing distance fields.
+          </p>
+        </div>
+        <div className="text-xs text-right text-slate-400">
+          {state.voronoiPolygons.length
+            ? `${state.voronoiPolygons.length} polygons`
+            : "No polygons yet"}
+        </div>
+      </div>
+      <div className="mt-6 flex justify-center">
+        <VoronoiPane
           width={width}
           height={height}
           className="rounded-2xl border border-slate-800"
@@ -223,7 +269,7 @@ function TestPageContent() {
           <p className="text-base text-slate-300 sm:text-lg">
             Tailwind is wired up for the standalone demo. Every canvas treats{" "}
             <span className="font-semibold text-emerald-300">1 px</span> as{" "}
-            <span className="font-semibold text-emerald-300">0.1 mm</span>, so
+            <span className="font-semibold text-emerald-300">0.2 mm</span>, so
             the rulers + grid double-check physical scale before SVG export.
           </p>
           <div className="mt-2 rounded-lg border border-emerald-500/30 bg-emerald-950/20 p-3 text-xs text-emerald-200">
@@ -237,9 +283,12 @@ function TestPageContent() {
           <SegmentPaneCard />
         </section>
 
-        <CanvasDemo />
+        <section className="grid gap-6 md:grid-cols-2">
+          <VoronoiPaneCard />
+          <CanvasDemo />
+        </section>
 
-        <section className="grid gap-6 grid-cols-2">
+        <section className="grid gap-6 md:grid-cols-2">
           {panes.map((pane) => (
             <article
               key={pane.title}
