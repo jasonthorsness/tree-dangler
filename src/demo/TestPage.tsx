@@ -1,10 +1,10 @@
 import { useCallback, useState } from 'react'
 
+import { MaskPane } from '../lib/panes/MaskPane'
 import { TreeDanglerProvider, useTreeDanglerState } from '../lib/state/store'
 import { CanvasPane, type PointerEventData } from '../lib/ui/CanvasPane'
 
 const panes = [
-  { title: 'Mask Editor', description: 'Edit base silhouettes with intuitive point + segment controls.' },
   { title: 'Segment Inputs', description: 'Annotate dangling points and guide Voronoi sampling.' },
   { title: 'Distance Field', description: 'Blend Voronoi shapes with threshold + noise controls.' },
   { title: 'Connectors', description: 'Fix connector lengths and anchor them to polygons.' },
@@ -108,6 +108,37 @@ function CanvasDemo() {
   )
 }
 
+function MaskPaneCard() {
+  const { state } = useTreeDanglerState()
+  const width = 600
+  const height = 600
+
+  return (
+    <div className="rounded-3xl border border-emerald-900/50 bg-slate-900/60 p-6 shadow-2xl shadow-black/50">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.4em] text-emerald-300">Module 0</p>
+          <h2 className="text-2xl font-semibold text-white">Mask Editor</h2>
+          <p className="text-sm text-slate-300">
+            Click points to select, click edges to insert, hit Delete to remove (min 3 points).
+          </p>
+        </div>
+        <div className="flex flex-col gap-1 text-right">
+          <div className="rounded-lg border border-emerald-500/30 px-3 py-1 text-xs text-emerald-200">
+            {width}×{height}
+          </div>
+          <div className="text-xs text-slate-400">
+            {state.mask.points.length} points
+          </div>
+        </div>
+      </div>
+      <div className="mt-6 flex justify-center">
+        <MaskPane width={width} height={height} className="rounded-2xl border border-slate-800" />
+      </div>
+    </div>
+  )
+}
+
 function TestPageContent() {
   const { state } = useTreeDanglerState()
 
@@ -126,6 +157,11 @@ function TestPageContent() {
           </div>
         </header>
 
+        <section className="grid gap-6 lg:grid-cols-2">
+          <MaskPaneCard />
+          <CanvasDemo />
+        </section>
+
         <section className="grid gap-6 md:grid-cols-2">
           {panes.map((pane) => (
             <article
@@ -138,8 +174,6 @@ function TestPageContent() {
             </article>
           ))}
         </section>
-
-        <CanvasDemo />
 
         <section className="rounded-3xl border border-slate-800 bg-slate-900/50 p-6">
           <p className="text-xs font-semibold uppercase tracking-[0.4em] text-emerald-300">Build Notes</p>
