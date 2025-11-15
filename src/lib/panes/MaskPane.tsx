@@ -9,6 +9,7 @@ import {
 } from '../logic/mask'
 import { useTreeDanglerState } from '../state/store'
 import { CanvasPane, type PointerEventData } from '../ui/CanvasPane'
+import { drawMetricBackground, drawMetricRulers } from '../ui/metricGrid'
 
 const POINT_HIT_RADIUS = 12
 const SEGMENT_TOLERANCE = 10
@@ -57,25 +58,7 @@ export function MaskPane({ width, height, className }: MaskPaneProps) {
       if (!mask.points.length) return
 
       ctx.clearRect(0, 0, width, height)
-
-      // Background grid
-      ctx.fillStyle = '#020617'
-      ctx.fillRect(0, 0, width, height)
-
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.07)'
-      ctx.lineWidth = 1
-      for (let x = 0; x < width; x += 40) {
-        ctx.beginPath()
-        ctx.moveTo(x, 0)
-        ctx.lineTo(x, height)
-        ctx.stroke()
-      }
-      for (let y = 0; y < height; y += 40) {
-        ctx.beginPath()
-        ctx.moveTo(0, y)
-        ctx.lineTo(width, y)
-        ctx.stroke()
-      }
+      drawMetricBackground(ctx, width, height)
 
       // Mask polygon fill
       ctx.beginPath()
@@ -110,6 +93,7 @@ export function MaskPane({ width, height, className }: MaskPaneProps) {
         ctx.fill()
         ctx.stroke()
       })
+      drawMetricRulers(ctx, width, height)
     },
     [mask.points, height, width, selectedPoint],
   )
