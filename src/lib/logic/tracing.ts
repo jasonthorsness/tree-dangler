@@ -3,9 +3,9 @@ import ImageTracer from "imagetracerjs";
 import type { BinaryBitmap, Point, Polygon } from "../types";
 
 const TRACE_OPTIONS = {
-  ltres: 0.01,
-  qtres: 0.01,
-  pathomit: 0,
+  ltres: 0.1,
+  qtres: 0.1,
+  pathomit: 8,
   rightangleenhance: false,
   colorsampling: 0,
   numberofcolors: 2,
@@ -29,13 +29,14 @@ export function traceBinaryBitmap(bitmap: BinaryBitmap): Polygon[] {
     );
 
     const polygons: Polygon[] = [];
+    const seen = new Set<string>();
     traced.layers.forEach((layer: any[], layerIndex: number) => {
       layer.forEach((path: any, pathIndex: number) => {
         if (!path || !path.segments || path.segments.length === 0) {
           return;
         }
 
-        const points: Point[] = [];
+        let points: Point[] = [];
         path.segments.forEach((segment: any, segmentIndex: number) => {
           if (segmentIndex === 0) {
             points.push({
@@ -50,6 +51,13 @@ export function traceBinaryBitmap(bitmap: BinaryBitmap): Polygon[] {
         });
 
         if (points.length >= 3) {
+          const key = points
+            .map((p) => `${p.x.toFixed(3)},${p.y.toFixed(3)}`)
+            .join("|");
+          if (seen.has(key)) {
+            return;
+          }
+          seen.add(key);
           polygons.push({
             id: `piece-${layerIndex}-${pathIndex}`,
             points,
@@ -58,6 +66,7 @@ export function traceBinaryBitmap(bitmap: BinaryBitmap): Polygon[] {
       });
     });
 
+    polygons.shift();
     return polygons;
   } catch (error) {
     console.error("Failed to trace bitmap into polygons:", error);

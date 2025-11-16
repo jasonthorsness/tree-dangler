@@ -3,6 +3,7 @@ import { makeNoise2D } from 'open-simplex-noise';
 import { TreeDanglerState, MaskPolygon, LineSegment, Polygon, BinaryBitmap } from '../types';
 import { rasterizeVoronoiMask, computeDistanceField } from '../logic/distanceField';
 import { traceBinaryBitmap } from '../logic/tracing';
+import { generateSVG } from '../logic/svgExport';
 import { mmToPx, resizeConnectorFromStart } from '../logic/connectors';
 
 // Action types
@@ -17,7 +18,8 @@ type Action =
   | { type: 'SET_PIECE_POLYGONS'; payload: TreeDanglerState['piecePolygons'] }
   | { type: 'SET_CONNECTORS'; payload: TreeDanglerState['connectors'] }
   | { type: 'SET_DISTANCE_CONFIG'; payload: Partial<Pick<TreeDanglerState, 'shrinkThreshold' | 'growThreshold' | 'noiseAmplitude' | 'noiseSeed'>> }
-  | { type: 'SET_CONNECTOR_LENGTH'; payload: number };
+  | { type: 'SET_CONNECTOR_LENGTH'; payload: number }
+  | { type: 'SET_SVG_STRING'; payload: string };
 
 // Initial state with a default triangle mask
 const initialState: TreeDanglerState = {
@@ -40,6 +42,7 @@ const initialState: TreeDanglerState = {
   noiseSeed: 0,
   connectorLength: 8,
   distancePreview: undefined,
+  svgString: "",
 };
 
 // Reducer
@@ -72,6 +75,8 @@ function reducer(state: TreeDanglerState, action: Action): TreeDanglerState {
       return { ...state, ...action.payload };
     case 'SET_DISTANCE_PREVIEW':
       return { ...state, distancePreview: action.payload };
+    case 'SET_SVG_STRING':
+      return { ...state, svgString: action.payload };
     case 'SET_CONNECTOR_LENGTH':
       return {
         ...state,
@@ -100,6 +105,8 @@ export function TreeDanglerProvider({ children }: { children: ReactNode }) {
   useVoronoiRasterize(state.mask, state.voronoiPolygons, dispatch);
   useDistanceProcessing(
     state.voronoiRaster,
+    state.connectors,
+    state.segments,
     {
       shrinkThreshold: state.shrinkThreshold,
       growThreshold: state.growThreshold,
@@ -204,6 +211,8 @@ interface DistanceProcessingConfig {
 
 function useDistanceProcessing(
   raster: BinaryBitmap | undefined,
+  connectors: LineSegment[],
+  segments: LineSegment[],
   config: DistanceProcessingConfig,
   dispatch: Dispatch<Action>,
 ) {
@@ -220,6 +229,7 @@ function useDistanceProcessing(
       dispatch({ type: "SET_DISTANCE_FIELD", payload: {} });
       dispatch({ type: "SET_DISTANCE_PREVIEW", payload: undefined });
       dispatch({ type: "SET_PIECE_POLYGONS", payload: [] });
+      dispatch({ type: "SET_SVG_STRING", payload: "" });
       return;
     }
 
@@ -294,7 +304,8 @@ function useDistanceProcessing(
         previewData[offset] = 0;
         previewData[offset + 1] = 0;
         previewData[offset + 2] = 0;
-        previewData[offset + 3] = 255;
+        // Use transparent background so tracing focuses on the foreground only.
+        previewData[offset + 3] = 0;
       }
     }
     dispatch({
@@ -312,8 +323,12 @@ function useDistanceProcessing(
       data: previewData,
     });
     dispatch({ type: "SET_PIECE_POLYGONS", payload: tracedPolygons });
+    const svgOutput = generateSVG(tracedPolygons, connectors, segments, width, height);
+    dispatch({ type: "SET_SVG_STRING", payload: svgOutput });
   }, [
     raster,
+    connectors,
+    segments,
     config.shrinkThreshold,
     config.growThreshold,
     config.noiseAmplitude,

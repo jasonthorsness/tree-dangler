@@ -55,16 +55,12 @@ export function clampPointToMask(point: Point, mask: MaskPolygon): Point | null 
 }
 
 export function createDefaultSegmentAtPoint(
-  mask: MaskPolygon,
+  _mask: MaskPolygon,
   click: Point,
 ): LineSegment | null {
   const span = 20
   const start: Point = { x: click.x - span, y: click.y }
   const end: Point = { x: click.x + span, y: click.y }
-
-  if (!isPointInsideMask(start, mask) || !isPointInsideMask(end, mask)) {
-    return null
-  }
 
   return {
     id: crypto.randomUUID(),
@@ -119,14 +115,10 @@ export function hitTestEndpoint(
 export function moveSegment(
   segment: LineSegment,
   delta: Point,
-  mask: MaskPolygon,
+  _mask: MaskPolygon,
 ): LineSegment | null {
   const newStart = { x: segment.start.x + delta.x, y: segment.start.y + delta.y }
   const newEnd = { x: segment.end.x + delta.x, y: segment.end.y + delta.y }
-
-  if (!isPointInsideMask(newStart, mask) || !isPointInsideMask(newEnd, mask)) {
-    return null
-  }
 
   return { ...segment, start: newStart, end: newEnd }
 }
@@ -135,12 +127,8 @@ export function moveEndpoint(
   segment: LineSegment,
   endpoint: 'start' | 'end',
   newPoint: Point,
-  mask: MaskPolygon,
+  _mask: MaskPolygon,
 ): LineSegment | null {
-  if (!isPointInsideMask(newPoint, mask)) {
-    return null
-  }
-
   if (endpoint === 'start') {
     return { ...segment, start: newPoint }
   }

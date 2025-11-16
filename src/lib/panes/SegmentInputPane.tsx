@@ -18,6 +18,8 @@ export interface SegmentInputPaneProps {
   className?: string
 }
 
+const LABEL_STUB_LENGTH_PX = 10 // 2mm at 5 px per mm
+
 interface DragInfo {
   mode: 'segment' | 'start' | 'end'
   segmentIndex: number
@@ -61,11 +63,27 @@ export function SegmentInputPane({ width, height, className }: SegmentInputPaneP
 
       segments.forEach((segment) => {
         const selected = segment.id === selectedId
+        const hasText = !!segment.text
         ctx.strokeStyle = selected ? '#fcd34d' : '#94a3b8'
         ctx.lineWidth = selected ? 4 : 2
         ctx.beginPath()
-        ctx.moveTo(segment.start.x, segment.start.y)
-        ctx.lineTo(segment.end.x, segment.end.y)
+        if (!hasText) {
+          ctx.moveTo(segment.start.x, segment.start.y)
+          ctx.lineTo(segment.end.x, segment.end.y)
+        } else {
+          const dx = segment.end.x - segment.start.x
+          const dy = segment.end.y - segment.start.y
+          const len = Math.hypot(dx, dy)
+          const stub = Math.min(LABEL_STUB_LENGTH_PX, len / 2)
+          if (len > 0 && stub > 0) {
+            const ux = dx / len
+            const uy = dy / len
+            ctx.moveTo(segment.start.x, segment.start.y)
+            ctx.lineTo(segment.start.x + ux * stub, segment.start.y + uy * stub)
+            ctx.moveTo(segment.end.x, segment.end.y)
+            ctx.lineTo(segment.end.x - ux * stub, segment.end.y - uy * stub)
+          }
+        }
         ctx.stroke()
 
         ctx.fillStyle = selected ? '#0f172a' : '#1e293b'
@@ -81,10 +99,36 @@ export function SegmentInputPane({ width, height, className }: SegmentInputPaneP
         if (segment.text) {
           const midX = (segment.start.x + segment.end.x) / 2
           const midY = (segment.start.y + segment.end.y) / 2
+          const angle = Math.atan2(segment.end.y - segment.start.y, segment.end.x - segment.start.x)
+          const textPadding = 6
+
+          // Draw the line in two halves, leaving a gap behind the label.
+          const halfWidth = ctx.measureText(segment.text).width / 2 + textPadding
+          const dx = Math.cos(angle)
+          const dy = Math.sin(angle)
+          const gapStartX = midX - dx * halfWidth
+          const gapStartY = midY - dy * halfWidth
+          const gapEndX = midX + dx * halfWidth
+          const gapEndY = midY + dy * halfWidth
+
+          ctx.strokeStyle = selected ? '#fcd34d' : '#94a3b8'
+          ctx.lineWidth = selected ? 4 : 2
+          ctx.beginPath()
+          ctx.moveTo(segment.start.x, segment.start.y)
+          ctx.lineTo(gapStartX, gapStartY)
+          ctx.moveTo(gapEndX, gapEndY)
+          ctx.lineTo(segment.end.x, segment.end.y)
+          ctx.stroke()
+
+          ctx.save()
+          ctx.translate(midX, midY)
+          ctx.rotate(angle)
           ctx.font = '12px "JetBrains Mono", monospace'
           ctx.fillStyle = selected ? '#fcd34d' : '#cbd5f5'
           ctx.textAlign = 'center'
-          ctx.fillText(segment.text, midX, midY - 8)
+          ctx.textBaseline = 'middle'
+          ctx.fillText(segment.text, 0, 0)
+          ctx.restore()
         }
       })
 

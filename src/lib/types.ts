@@ -48,6 +48,7 @@ export interface TreeDanglerState {
   noiseSeed: number;
   connectorLength: number;
   distancePreview?: BinaryBitmap;
+  svgString?: string;
 }
 
 export interface BinaryBitmap {

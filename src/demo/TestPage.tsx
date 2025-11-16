@@ -4,6 +4,7 @@ import { MaskPane } from "../lib/panes/MaskPane";
 import { SegmentInputPane } from "../lib/panes/SegmentInputPane";
 import { ConnectorsPane } from "../lib/panes/ConnectorsPane";
 import { SimulationPane } from "../lib/panes/SimulationPane";
+import { SvgExportPane } from "../lib/panes/SvgExportPane";
 import { VoronoiPane } from "../lib/panes/VoronoiPane";
 import { DistanceFieldPane } from "../lib/panes/DistanceFieldPane";
 import { TracedPolygonsPane } from "../lib/panes/TracedPolygonsPane";
@@ -418,6 +419,27 @@ function SimulationCard() {
   );
 }
 
+function SvgExportCard() {
+  return (
+    <div className="rounded-3xl border border-emerald-900/40 bg-slate-900/60 p-6 shadow-2xl shadow-black/40">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.4em] text-emerald-300">
+            Module 7 · SVG Export
+          </p>
+          <h2 className="text-2xl font-semibold text-white">Laser-ready Output</h2>
+          <p className="text-sm text-slate-300">
+            Downloads traced polygons as red 0.1mm-stroked paths with 2mm connector holes.
+          </p>
+        </div>
+      </div>
+      <div className="mt-6 space-y-4">
+        <SvgExportPane className="rounded-2xl border border-slate-800 p-4" />
+      </div>
+    </div>
+  );
+}
+
 function TestPageContent() {
   const { state } = useTreeDanglerState();
 
@@ -460,6 +482,10 @@ function TestPageContent() {
 
         <section className="grid gap-6 md:grid-cols-2">
           <SimulationCard />
+          <SvgExportCard />
+        </section>
+
+        <section className="grid gap-6 md:grid-cols-2">
           <CanvasDemo />
         </section>
 

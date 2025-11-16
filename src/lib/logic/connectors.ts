@@ -2,7 +2,6 @@ import type { LineSegment, MaskPolygon, Point } from "../types";
 import {
   hitTestEndpoint as baseHitTestEndpoint,
   hitTestSegment as baseHitTestSegment,
-  isPointInsideMask,
   moveSegment,
 } from "./segments";
 
@@ -13,17 +12,13 @@ export function mmToPx(mm: number) {
 }
 
 export function createConnectorAtPoint(
-  mask: MaskPolygon,
+  _mask: MaskPolygon,
   click: Point,
   lengthPx: number
 ): LineSegment | null {
   const half = lengthPx / 2;
   const start: Point = { x: click.x, y: click.y - half };
   const end: Point = { x: click.x, y: click.y + half };
-
-  if (!isPointInsideMask(start, mask) || !isPointInsideMask(end, mask)) {
-    return null;
-  }
 
   return {
     id: crypto.randomUUID(),
@@ -76,13 +71,10 @@ function pointOnLineWithLength(
 export function resizeConnectorFromStart(
   segment: LineSegment,
   lengthPx: number,
-  mask: MaskPolygon
+  _mask: MaskPolygon
 ): LineSegment {
   const end = pointOnLineWithLength(segment.start, segment.end, lengthPx);
   if (!end) {
-    return segment;
-  }
-  if (!isPointInsideMask(segment.start, mask) || !isPointInsideMask(end, mask)) {
     return segment;
   }
   return { ...segment, end };
@@ -92,18 +84,12 @@ export function moveConnectorEndpoint(
   segment: LineSegment,
   endpoint: "start" | "end",
   pointer: Point,
-  mask: MaskPolygon,
+  _mask: MaskPolygon,
   lengthPx: number
 ): LineSegment | null {
   const anchor = endpoint === "start" ? segment.end : segment.start;
   const newPoint = pointOnLineWithLength(anchor, pointer, lengthPx);
   if (!newPoint) {
-    return null;
-  }
-  if (
-    !isPointInsideMask(anchor, mask) ||
-    !isPointInsideMask(newPoint, mask)
-  ) {
     return null;
   }
   if (endpoint === "start") {

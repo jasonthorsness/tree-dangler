@@ -1,4 +1,11 @@
 import Matter from "matter-js";
+import decomp from "poly-decomp";
+
+// Required for Matter to find the decomp library
+// (Matter checks for global `window.decomp`)
+(window as any).decomp = decomp;
+
+(Matter.Common as any).setDecomp(decomp);
 
 import type { LineSegment, Polygon } from "../types";
 
@@ -19,17 +26,24 @@ export function createSimulationWorld(
 
   const bodies: Matter.Body[] = [];
 
-  // only take the first polygon
-  polygons = polygons.slice(1, 4);
-
   polygons.forEach((poly) => {
     if (poly.points.length < 3) return;
     const vertices = poly.points.map((p) => ({ x: p.x, y: p.y }));
-    const body = Matter.Bodies.fromVertices(0, 0, [vertices], {
-      friction: 0.3,
-      restitution: 0.1,
-      density: 0.002,
-    });
+    const body = Matter.Bodies.fromVertices(
+      0,
+      0,
+      [vertices],
+      {
+        friction: 0.3,
+        restitution: 0.1,
+        density: 0.002,
+      },
+      true,
+      0.5
+    );
+    console.log(body.parts.length);
+    console.log((window as any).decomp);
+    console.log((Matter.Common as any)._decomp);
     if (body) {
       const center = Matter.Vertices.centre(vertices);
       Matter.Body.setPosition(body, center);
