@@ -3,6 +3,7 @@ import { makeNoise2D } from 'open-simplex-noise';
 import { TreeDanglerState, MaskPolygon, LineSegment, Polygon, BinaryBitmap } from '../types';
 import { rasterizeVoronoiMask, computeDistanceField } from '../logic/distanceField';
 import { traceBinaryBitmap } from '../logic/tracing';
+import { mmToPx, resizeConnectorFromStart } from '../logic/connectors';
 
 // Action types
 type Action =
@@ -37,7 +38,7 @@ const initialState: TreeDanglerState = {
   growThreshold: 10,
   noiseAmplitude: 5,
   noiseSeed: 0,
-  connectorLength: 30,
+  connectorLength: 8,
   distancePreview: undefined,
 };
 
@@ -72,7 +73,13 @@ function reducer(state: TreeDanglerState, action: Action): TreeDanglerState {
     case 'SET_DISTANCE_PREVIEW':
       return { ...state, distancePreview: action.payload };
     case 'SET_CONNECTOR_LENGTH':
-      return { ...state, connectorLength: action.payload };
+      return {
+        ...state,
+        connectorLength: action.payload,
+        connectors: state.connectors.map((segment) =>
+          resizeConnectorFromStart(segment, mmToPx(action.payload), state.mask),
+        ),
+      };
     default:
       return state;
   }

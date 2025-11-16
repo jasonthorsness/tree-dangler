@@ -40,7 +40,7 @@ export interface TreeDanglerState {
   distanceFieldMax?: number;
   thresholdBitmap?: Uint8ClampedArray;
   piecePolygons: Polygon[];
-  connectors: Connector[];
+  connectors: LineSegment[];
   // UI-level config
   shrinkThreshold: number;
   growThreshold: number;

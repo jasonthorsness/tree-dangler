@@ -2,6 +2,7 @@ import { useCallback, useState } from "react";
 
 import { MaskPane } from "../lib/panes/MaskPane";
 import { SegmentInputPane } from "../lib/panes/SegmentInputPane";
+import { ConnectorsPane } from "../lib/panes/ConnectorsPane";
 import { VoronoiPane } from "../lib/panes/VoronoiPane";
 import { DistanceFieldPane } from "../lib/panes/DistanceFieldPane";
 import { TracedPolygonsPane } from "../lib/panes/TracedPolygonsPane";
@@ -271,9 +272,7 @@ function DistanceFieldCard() {
             Distance Transform
           </h2>
           <p className="text-sm text-slate-300">
-            Shrink → grow pipeline with optional noise; final shapes reuse their
-            original Voronoi colors so you can see how the morph operations
-            affect each segment.
+            Shrink → grow pipeline with optional noise, visualized as a grayscale mask that feeds tracing for the next phase.
           </p>
         </div>
         <div className="text-xs text-right text-slate-400">
@@ -327,6 +326,55 @@ function TracedPolygonsCard() {
   );
 }
 
+function ConnectorsCard() {
+  const width = 600;
+  const height = 600;
+  const { state, dispatch } = useTreeDanglerState();
+
+  return (
+    <div className="rounded-3xl border border-sky-900/40 bg-slate-900/60 p-6 shadow-2xl shadow-black/40">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.4em] text-sky-300">
+            Module 5 · Connectors
+          </p>
+          <h2 className="text-2xl font-semibold text-white">Connector Editor</h2>
+          <p className="text-sm text-slate-300">
+            Works like the segment editor but draws vertical connectors with a fixed physical length.
+          </p>
+        </div>
+        <div className="text-xs text-right text-slate-400">
+          {state.connectors.length
+            ? `${state.connectors.length} connector${state.connectors.length === 1 ? "" : "s"}`
+            : "No connectors yet"}
+        </div>
+      </div>
+      <div className="mt-6 flex flex-col items-center gap-4">
+        <ConnectorsPane
+          width={width}
+          height={height}
+          className="rounded-2xl border border-slate-800 w-[600px] h-[600px]"
+        />
+        <label className="flex w-full max-w-sm flex-col gap-2 text-xs text-slate-300">
+          <span className="flex items-center justify-between uppercase tracking-[0.3em] text-slate-500">
+            Connector length <span>{state.connectorLength.toFixed(1)} mm</span>
+          </span>
+          <input
+            type="number"
+            min={2}
+            step={0.5}
+            value={state.connectorLength}
+            onChange={(event) =>
+              dispatch({ type: "SET_CONNECTOR_LENGTH", payload: Number(event.target.value) })
+            }
+            className="rounded border border-slate-700 bg-slate-900 px-2 py-1 text-slate-100"
+          />
+        </label>
+      </div>
+    </div>
+  );
+}
+
 function TestPageContent() {
   const { state } = useTreeDanglerState();
 
@@ -364,7 +412,24 @@ function TestPageContent() {
 
         <section className="grid gap-6 md:grid-cols-2">
           <TracedPolygonsCard />
+          <ConnectorsCard />
+        </section>
+
+        <section className="grid gap-6 md:grid-cols-2">
           <CanvasDemo />
+        </section>
+
+        <section className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+          {panes.map((pane) => (
+            <article
+              key={pane.title}
+              className="rounded-2xl border border-slate-800 bg-gradient-to-br from-slate-900/70 to-slate-900/30 p-6 shadow-2xl shadow-slate-950/50"
+            >
+              <h2 className="text-xl font-semibold text-white">{pane.title}</h2>
+              <p className="mt-2 text-sm text-slate-300">{pane.description}</p>
+              <div className="mt-6 h-24 rounded-xl border border-dashed border-slate-700 bg-slate-900/60" />
+            </article>
+          ))}
         </section>
 
         <section className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
