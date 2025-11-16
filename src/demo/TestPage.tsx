@@ -1,8 +1,9 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import { MaskPane } from "../lib/panes/MaskPane";
 import { SegmentInputPane } from "../lib/panes/SegmentInputPane";
 import { ConnectorsPane } from "../lib/panes/ConnectorsPane";
+import { SimulationPane } from "../lib/panes/SimulationPane";
 import { VoronoiPane } from "../lib/panes/VoronoiPane";
 import { DistanceFieldPane } from "../lib/panes/DistanceFieldPane";
 import { TracedPolygonsPane } from "../lib/panes/TracedPolygonsPane";
@@ -375,6 +376,48 @@ function ConnectorsCard() {
   );
 }
 
+function SimulationCard() {
+  const width = 600;
+  const height = 600;
+  const [resetToken, setResetToken] = useState(0);
+  const { state } = useTreeDanglerState();
+
+  useEffect(() => {
+    setResetToken((token) => token + 1);
+  }, [state.piecePolygons, state.connectors]);
+
+  return (
+    <div className="rounded-3xl border border-purple-900/40 bg-slate-900/60 p-6 shadow-2xl shadow-black/40">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.4em] text-purple-300">
+            Module 6 · Physics Preview
+          </p>
+          <h2 className="text-2xl font-semibold text-white">Simulation</h2>
+          <p className="text-sm text-slate-300">
+            Traced polygons fall with gravity while connectors act as springs between attachment points.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => setResetToken((token) => token + 1)}
+          className="rounded-full border border-purple-400/50 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-purple-100 transition hover:border-purple-300"
+        >
+          Reset Simulation
+        </button>
+      </div>
+      <div className="mt-6 flex justify-center">
+        <SimulationPane
+          width={width}
+          height={height}
+          resetToken={resetToken}
+          className="rounded-2xl border border-slate-800 w-[600px] h-[600px]"
+        />
+      </div>
+    </div>
+  );
+}
+
 function TestPageContent() {
   const { state } = useTreeDanglerState();
 
@@ -416,6 +459,7 @@ function TestPageContent() {
         </section>
 
         <section className="grid gap-6 md:grid-cols-2">
+          <SimulationCard />
           <CanvasDemo />
         </section>
 
