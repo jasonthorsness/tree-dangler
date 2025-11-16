@@ -2,6 +2,7 @@ import { createContext, useContext, useReducer, useEffect, useRef, type Dispatch
 import { makeNoise2D } from 'open-simplex-noise';
 import { TreeDanglerState, MaskPolygon, LineSegment, Polygon, BinaryBitmap } from '../types';
 import { rasterizeVoronoiMask, computeDistanceField } from '../logic/distanceField';
+import { traceBinaryBitmap } from '../logic/tracing';
 
 // Action types
 type Action =
@@ -211,6 +212,7 @@ function useDistanceProcessing(
     if (!raster) {
       dispatch({ type: "SET_DISTANCE_FIELD", payload: {} });
       dispatch({ type: "SET_DISTANCE_PREVIEW", payload: undefined });
+      dispatch({ type: "SET_PIECE_POLYGONS", payload: [] });
       return;
     }
 
@@ -296,6 +298,13 @@ function useDistanceProcessing(
         data: previewData,
       },
     });
+
+    const tracedPolygons = traceBinaryBitmap({
+      width,
+      height,
+      data: previewData,
+    });
+    dispatch({ type: "SET_PIECE_POLYGONS", payload: tracedPolygons });
   }, [
     raster,
     config.shrinkThreshold,

@@ -10,6 +10,7 @@
   "dependencies": {
     "@tailwindcss/vite": "^4.1.17",
     "d3-delaunay": "^6.0.4",
+    "imagetracerjs": "^1.2.6",
     "martinez-polygon-clipping": "^0.7.4",
     "open-simplex-noise": "^2.5.0",
     "react": "^19.2.0",

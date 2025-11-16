@@ -4,6 +4,7 @@ import { MaskPane } from "../lib/panes/MaskPane";
 import { SegmentInputPane } from "../lib/panes/SegmentInputPane";
 import { VoronoiPane } from "../lib/panes/VoronoiPane";
 import { DistanceFieldPane } from "../lib/panes/DistanceFieldPane";
+import { TracedPolygonsPane } from "../lib/panes/TracedPolygonsPane";
 import { TreeDanglerProvider, useTreeDanglerState } from "../lib/state/store";
 import { CanvasPane, type PointerEventData } from "../lib/ui/CanvasPane";
 
@@ -292,6 +293,40 @@ function DistanceFieldCard() {
   );
 }
 
+function TracedPolygonsCard() {
+  const width = 600;
+  const height = 600;
+  const { state } = useTreeDanglerState();
+
+  return (
+    <div className="rounded-3xl border border-amber-900/40 bg-slate-900/60 p-6 shadow-2xl shadow-black/40">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.4em] text-amber-300">
+            Module 4 · Traced Pieces
+          </p>
+          <h2 className="text-2xl font-semibold text-white">Polygon Output</h2>
+          <p className="text-sm text-slate-300">
+            Distance-mask raster vectorized into discrete pieces; each polygon gets a deterministic random color.
+          </p>
+        </div>
+        <div className="text-xs text-right text-slate-400">
+          {state.piecePolygons.length
+            ? `${state.piecePolygons.length} piece${state.piecePolygons.length === 1 ? "" : "s"}`
+            : "Tracing pending"}
+        </div>
+      </div>
+      <div className="mt-6 flex justify-center">
+        <TracedPolygonsPane
+          width={width}
+          height={height}
+          className="rounded-2xl border border-slate-800 w-[600px] h-[600px]"
+        />
+      </div>
+    </div>
+  );
+}
+
 function TestPageContent() {
   const { state } = useTreeDanglerState();
 
@@ -327,9 +362,12 @@ function TestPageContent() {
           <DistanceFieldCard />
         </section>
 
-        <CanvasDemo />
-
         <section className="grid gap-6 md:grid-cols-2">
+          <TracedPolygonsCard />
+          <CanvasDemo />
+        </section>
+
+        <section className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
           {panes.map((pane) => (
             <article
               key={pane.title}
