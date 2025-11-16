@@ -38,9 +38,10 @@ export function CanvasPane({
     const canvas = canvasRef.current
     if (!canvas || !onDraw) return
 
-    const dpr = typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1
-    const targetWidth = Math.floor(width * dpr)
-    const targetHeight = Math.floor(height * dpr)
+    // Disable DPR scaling to keep canvas pixels 1:1 with CSS pixels.
+    const dpr = 1
+    const targetWidth = width
+    const targetHeight = height
 
     if (canvas.width !== targetWidth || canvas.height !== targetHeight) {
       canvas.width = targetWidth

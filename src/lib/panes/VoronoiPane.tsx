@@ -4,14 +4,13 @@ import type { Polygon } from '../types'
 import { useTreeDanglerState } from '../state/store'
 import { CanvasPane } from '../ui/CanvasPane'
 import { drawMetricBackground, drawMetricRulers } from '../ui/metricGrid'
+import { getPaletteColor } from '../ui/palette'
 
 export interface VoronoiPaneProps {
   width: number
   height: number
   className?: string
 }
-
-const palette = ['#38bdf8', '#34d399', '#f472b6', '#facc15', '#c084fc']
 
 function drawPolygons(ctx: CanvasRenderingContext2D, polygons: Polygon[]) {
   polygons.forEach((polygon, index) => {
@@ -23,7 +22,7 @@ function drawPolygons(ctx: CanvasRenderingContext2D, polygons: Polygon[]) {
     }
     ctx.closePath()
 
-    const fill = palette[index % palette.length]
+    const fill = getPaletteColor(index)
     ctx.fillStyle = `${fill}30`
     ctx.strokeStyle = fill
     ctx.lineWidth = 2

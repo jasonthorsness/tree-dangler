@@ -34,14 +34,24 @@ export interface TreeDanglerState {
   mask: MaskPolygon;
   segments: LineSegment[];
   voronoiPolygons: Polygon[];
+  voronoiRaster?: BinaryBitmap;
   distanceField?: Float32Array;
+  distanceFieldDimensions?: { width: number; height: number };
+  distanceFieldMax?: number;
   thresholdBitmap?: Uint8ClampedArray;
   piecePolygons: Polygon[];
   connectors: Connector[];
   // UI-level config
-  distanceThreshold: number;
-  noiseEnabled: boolean;
+  shrinkThreshold: number;
+  growThreshold: number;
   noiseAmplitude: number;
-  noiseScale: number;
+  noiseSeed: number;
   connectorLength: number;
+  distancePreview?: BinaryBitmap;
+}
+
+export interface BinaryBitmap {
+  width: number;
+  height: number;
+  data: Uint8ClampedArray;
 }

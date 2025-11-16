@@ -3,6 +3,7 @@ import { useCallback, useState } from "react";
 import { MaskPane } from "../lib/panes/MaskPane";
 import { SegmentInputPane } from "../lib/panes/SegmentInputPane";
 import { VoronoiPane } from "../lib/panes/VoronoiPane";
+import { DistanceFieldPane } from "../lib/panes/DistanceFieldPane";
 import { TreeDanglerProvider, useTreeDanglerState } from "../lib/state/store";
 import { CanvasPane, type PointerEventData } from "../lib/ui/CanvasPane";
 
@@ -152,8 +153,8 @@ function MaskPaneCard() {
           </p>
           <h2 className="text-2xl font-semibold text-white">Mask Editor</h2>
           <p className="text-sm text-slate-300">
-            600 × 600 px canvas ⇒ 120 × 120 mm workspace. Click points to select,
-            edges to insert, Delete to remove.
+            600 × 600 px canvas ⇒ 120 × 120 mm workspace. Click points to
+            select, edges to insert, Delete to remove.
           </p>
         </div>
         <div className="flex flex-col gap-1 text-right">
@@ -169,7 +170,7 @@ function MaskPaneCard() {
         <MaskPane
           width={width}
           height={height}
-          className="rounded-2xl border border-slate-800"
+          className="rounded-2xl border border-slate-800 w-[600px] h-[600px]"
         />
       </div>
     </div>
@@ -211,7 +212,7 @@ function SegmentPaneCard() {
         <SegmentInputPane
           width={width}
           height={height}
-          className="rounded-2xl border border-slate-800"
+          className="rounded-2xl border border-slate-800 w-[600px] h-[600px]"
         />
       </div>
     </div>
@@ -246,7 +247,45 @@ function VoronoiPaneCard() {
         <VoronoiPane
           width={width}
           height={height}
-          className="rounded-2xl border border-slate-800"
+          className="rounded-2xl border border-slate-800 w-[600px] h-[600px]"
+        />
+      </div>
+    </div>
+  );
+}
+
+function DistanceFieldCard() {
+  const width = 600;
+  const height = 600;
+  const { state } = useTreeDanglerState();
+
+  return (
+    <div className="rounded-3xl border border-rose-900/40 bg-slate-900/60 p-6 shadow-2xl shadow-black/40">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.4em] text-rose-300">
+            Module 3 · Checkpoints 5.2–5.4
+          </p>
+          <h2 className="text-2xl font-semibold text-white">
+            Distance Transform
+          </h2>
+          <p className="text-sm text-slate-300">
+            Shrink → grow pipeline with optional noise; final shapes reuse their
+            original Voronoi colors so you can see how the morph operations
+            affect each segment.
+          </p>
+        </div>
+        <div className="text-xs text-right text-slate-400">
+          {state.distanceField && state.distanceFieldDimensions
+            ? `${state.distanceFieldDimensions.width}×${state.distanceFieldDimensions.height}`
+            : "Not ready"}
+        </div>
+      </div>
+      <div className="mt-6 flex justify-center">
+        <DistanceFieldPane
+          width={width}
+          height={height}
+          className="w-[600px]"
         />
       </div>
     </div>
@@ -285,8 +324,10 @@ function TestPageContent() {
 
         <section className="grid gap-6 md:grid-cols-2">
           <VoronoiPaneCard />
-          <CanvasDemo />
+          <DistanceFieldCard />
         </section>
+
+        <CanvasDemo />
 
         <section className="grid gap-6 md:grid-cols-2">
           {panes.map((pane) => (
