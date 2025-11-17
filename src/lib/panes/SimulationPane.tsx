@@ -86,7 +86,7 @@ export function SimulationPane({
               }
 
               ctx.closePath();
-              ctx.fillStyle = "#ffffff";
+              ctx.fillStyle = "#FFFFFF";
               ctx.fill();
               ctx.strokeStyle = "#FFFFFF";
               ctx.lineWidth = 1.5;

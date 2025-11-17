@@ -10,7 +10,6 @@ function EditorCard() {
   const width = 600;
   const height = 800;
   const { state, dispatch } = useTreeDanglerState();
-  const [addMode, setAddMode] = useState<"segment" | "connector">("segment");
   const [resetToken, setResetToken] = useState(0);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -45,6 +44,17 @@ function EditorCard() {
   const handleLoad = useCallback(() => {
     fileInputRef.current?.click();
   }, []);
+
+  const handleDownloadSvg = useCallback(() => {
+    if (!state.svgString) return;
+    const blob = new Blob([state.svgString], { type: "image/svg+xml" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "tree-dangler.svg";
+    link.click();
+    URL.revokeObjectURL(url);
+  }, [state.svgString]);
 
   const handleFileChange = useCallback(
     (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -115,17 +125,16 @@ function EditorCard() {
                 line.
               </li>
               <li>
-                Next, in "add segment" mode add a segment for each separate
-                piece of the ornament. Double-click to change the text. Drag
-                points to rotate or elongate. Adjust the shrink, grow, and noise
-                parameters to alter the look of the segment pieces.
+                Next, left-click to add a segment for each separate piece of the
+                ornament. Double-click to change the text. Drag points to rotate
+                or elongate. Adjust the shrink, grow, and noise parameters to
+                alter the look of the segment pieces.
               </li>
               <li>
-                Third, in "add connector" mode, add at least one connector from
-                the background to your top segment. Then add more connectors
-                until all segments are connected. Change the connector length to
-                match your jump rings (10mm jump rings give about 8mm of
-                connector length).
+                Third, right-click to add a connector from the background to
+                your top segment. Then add more connectors until all segments
+                are connected. Change the connector length to match your jump
+                rings (10mm jump rings give about 8mm of connector length).
               </li>
               <li>
                 Adjust segments and connectors until the simulation shows them
@@ -157,82 +166,100 @@ function EditorCard() {
           segments · {state.connectors.length} connectors
         </div>
       </div>
-      <div className="mt-4 grid gap-4 grid-cols-3">
-        <div className="flex flex-col gap-4">
-          <div className="flex flex-wrap items-center gap-4 text-sm text-slate-200">
-            <label className="flex items-center gap-2">
-              <input
-                type="radio"
-                name="add-mode"
-                value="segment"
-                checked={addMode === "segment"}
-                onChange={() => setAddMode("segment")}
-              />
-              Add Segment
-            </label>
-            <label className="flex items-center gap-2">
-              <input
-                type="radio"
-                name="add-mode"
-                value="connector"
-                checked={addMode === "connector"}
-                onChange={() => setAddMode("connector")}
-              />
-              Add Connector
-            </label>
-            <button
-              type="button"
-              onClick={handleSave}
-              className="rounded-full border border-slate-600 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-100 transition hover:border-slate-400"
-            >
-              Save Scene
-            </button>
-            <button
-              type="button"
-              onClick={handleLoad}
-              className="rounded-full border border-slate-600 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-100 transition hover:border-slate-400"
-            >
-              Load Scene
-            </button>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="application/json"
-              className="hidden"
-              onChange={handleFileChange}
-            />
+      <div className="mt-4 grid gap-2 grid-cols-4">
+        <div className="flex flex-col gap-2">
+          <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-3 text-sm text-slate-200">
+            <p className="text-xs uppercase tracking-[0.25em] text-slate-400">
+              Interactions
+            </p>
+            <p className="mt-2 text-xs text-slate-300">
+              Left-click: add segment · Right-click: add connector. Drag
+              points/edges to edit; Delete removes the last selection.
+            </p>
           </div>
-          <div className="flex justify-center">
-            <EditorPane
-              width={width}
-              height={height}
-              addMode={addMode}
-              className="rounded-2xl border border-slate-800 w-full max-w-[600px] aspect-[3/4]"
-            />
-          </div>
-          <div className="mt-2">
+          <div className="flex flex-col gap-3 rounded-2xl border border-slate-800 bg-slate-900/60 p-3 text-sm text-slate-200">
+            <p className="text-xs uppercase tracking-[0.25em] text-slate-400">
+              Scene
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={handleSave}
+                className="rounded-full border border-slate-600 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-100 transition hover:border-slate-400"
+              >
+                Save Scene
+              </button>
+              <button
+                type="button"
+                onClick={handleLoad}
+                className="rounded-full border border-slate-600 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-100 transition hover:border-slate-400"
+              >
+                Load Scene
+              </button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="application/json"
+                className="hidden"
+                onChange={handleFileChange}
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  dispatch({
+                    type: "SET_MASK",
+                    payload: {
+                      id: "default-mask",
+                      points: [
+                        { x: 200, y: 100 },
+                        { x: 100, y: 300 },
+                        { x: 300, y: 300 },
+                      ],
+                    },
+                  });
+                  dispatch({ type: "SET_SEGMENTS", payload: [] });
+                  dispatch({ type: "SET_CONNECTORS", payload: [] });
+                }}
+                className="rounded-full border border-rose-600 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-rose-100 transition hover:border-rose-400"
+              >
+                Clear
+              </button>
+              <button
+                type="button"
+                onClick={() => setResetToken((token) => token + 1)}
+                className="rounded-full border border-purple-400/50 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-purple-100 transition hover:border-purple-300"
+              >
+                Reset Simulation
+              </button>
+              <button
+                type="button"
+                onClick={handleDownloadSvg}
+                className="rounded-full border border-emerald-400/40 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-emerald-100 transition hover:border-emerald-300"
+                disabled={!state.svgString}
+              >
+                Download SVG
+              </button>
+            </div>
             <DistanceFieldPane
-              width={width}
-              height={height}
-              className="w-[600px]"
+              width={300}
+              height={800}
+              className="w-full"
               showPreview={false}
             />
           </div>
         </div>
 
         <div className="flex flex-col gap-4">
-          <div className="flex items-center justify-between">
-            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-purple-300">
-              Simulation
-            </p>
-            <button
-              type="button"
-              onClick={() => setResetToken((token) => token + 1)}
-              className="rounded-full border border-purple-400/50 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-purple-100 transition hover:border-purple-300"
-            >
-              Reset Simulation
-            </button>
+          <div className="flex justify-center">
+            <EditorPane
+              width={width}
+              height={height}
+              className="rounded-2xl border border-slate-800 w-full max-w-[600px] aspect-[3/4]"
+            />
           </div>
+        </div>
+
+        <div className="flex flex-col gap-4">
           <div className="flex justify-center">
             <SimulationPane
               width={width}
@@ -244,14 +271,11 @@ function EditorCard() {
         </div>
 
         <div className="flex flex-col gap-4">
-          <div className="flex items-center justify-between">
-            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-emerald-300">
-              SVG Preview
-            </p>
-            <div />
-          </div>
           <div className="w-full max-w-[600px]">
-            <SvgExportPane className="rounded-2xl border border-slate-800 p-4 w-full" />
+            <SvgExportPane
+              className="rounded-2xl border border-slate-800 p-4 w-full"
+              showDownload={false}
+            />
           </div>
         </div>
       </div>

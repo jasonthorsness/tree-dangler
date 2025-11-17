@@ -4,9 +4,13 @@ import { useTreeDanglerState } from "../state/store";
 
 interface SvgExportPaneProps {
   className?: string;
+  showDownload?: boolean;
 }
 
-export function SvgExportPane({ className }: SvgExportPaneProps) {
+export function SvgExportPane({
+  className,
+  showDownload = true,
+}: SvgExportPaneProps) {
   const {
     state: { svgString },
   } = useTreeDanglerState();
@@ -31,29 +35,32 @@ export function SvgExportPane({ className }: SvgExportPaneProps) {
 
   return (
     <div className={className}>
-      <div className="flex items-center justify-center rounded-2xl border border-slate-800 bg-slate-900/40">
-        <div className="w-full max-w-[600px] aspect-[3/4] [&>svg]:h-full [&>svg]:w-full">
-          {displaySvg ? (
-            <div className="w-full h-full" dangerouslySetInnerHTML={{ __html: displaySvg }} />
-          ) : (
-            <div className="flex h-full w-full items-center justify-center">
-              <p className="text-xs text-slate-500">
-                Generate geometry first to preview the SVG.
-              </p>
-            </div>
-          )}
+      <div className="w-full max-w-[600px] aspect-[3/4] [&>svg]:h-full [&>svg]:w-full">
+        {displaySvg ? (
+          <div
+            className="w-full h-full"
+            dangerouslySetInnerHTML={{ __html: displaySvg }}
+          />
+        ) : (
+          <div className="flex h-full w-full items-center justify-center">
+            <p className="text-xs text-slate-500">
+              Generate geometry first to preview the SVG.
+            </p>
+          </div>
+        )}
+      </div>
+      {showDownload ? (
+        <div className="mt-4 flex gap-3">
+          <button
+            type="button"
+            onClick={handleDownload}
+            className="rounded-full border border-emerald-400/40 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-emerald-100 transition hover:border-emerald-300"
+            disabled={!svgString}
+          >
+            Download SVG
+          </button>
         </div>
-      </div>
-      <div className="mt-4 flex gap-3">
-        <button
-          type="button"
-          onClick={handleDownload}
-          className="rounded-full border border-emerald-400/40 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-emerald-100 transition hover:border-emerald-300"
-          disabled={!svgString}
-        >
-          Download SVG
-        </button>
-      </div>
+      ) : null}
     </div>
   );
 }

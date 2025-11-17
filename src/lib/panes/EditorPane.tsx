@@ -26,8 +26,6 @@ import {
 } from "../logic/connectors";
 import type { LineSegment, Point } from "../types";
 
-type AddMode = "segment" | "connector";
-
 interface DragInfo {
   kind: "mask" | "segment" | "connector";
   segmentIndex?: number;
@@ -40,38 +38,46 @@ interface DragInfo {
 export interface EditorPaneProps {
   width: number;
   height: number;
-  addMode: AddMode;
   className?: string;
 }
 
-const ENDPOINT_RADIUS = 10;
+const ENDPOINT_RADIUS = 7.5;
+const CONNECTOR_ENDPOINT_RADIUS = 6;
 
-export function EditorPane({ width, height, addMode, className }: EditorPaneProps) {
+export function EditorPane({ width, height, className }: EditorPaneProps) {
   const {
     state: { mask, segments, connectors, piecePolygons, connectorLength },
     dispatch,
   } = useTreeDanglerState();
 
-  const [selectedSegmentId, setSelectedSegmentId] = useState<string | null>(null);
-  const [selectedConnectorId, setSelectedConnectorId] = useState<string | null>(null);
+  const [selectedSegmentId, setSelectedSegmentId] = useState<string | null>(
+    null
+  );
+  const [selectedConnectorId, setSelectedConnectorId] = useState<string | null>(
+    null
+  );
   const [maskSelection, setMaskSelection] = useState<number | null>(null);
   const [dragInfo, setDragInfo] = useState<DragInfo | null>(null);
-  const [labelEditor, setLabelEditor] = useState<{ id: string; value: string } | null>(
-    null,
-  );
-  const [lastClick, setLastClick] = useState<{ id: string; timestamp: number } | null>(
-    null,
-  );
+  const [labelEditor, setLabelEditor] = useState<{
+    id: string;
+    value: string;
+  } | null>(null);
+  const [lastClick, setLastClick] = useState<{
+    id: string;
+    timestamp: number;
+  } | null>(null);
+  const [labelAnchor, setLabelAnchor] = useState<{ u: number; v: number } | null>(null);
 
   const pxLength = mmToPx(connectorLength);
 
   const setSegments = useCallback(
     (next: LineSegment[]) => dispatch({ type: "SET_SEGMENTS", payload: next }),
-    [dispatch],
+    [dispatch]
   );
   const setConnectors = useCallback(
-    (next: LineSegment[]) => dispatch({ type: "SET_CONNECTORS", payload: next }),
-    [dispatch],
+    (next: LineSegment[]) =>
+      dispatch({ type: "SET_CONNECTORS", payload: next }),
+    [dispatch]
   );
 
   const drawPane = useCallback(
@@ -153,36 +159,69 @@ export function EditorPane({ width, height, addMode, className }: EditorPaneProp
           const dx = segment.end.x - segment.start.x;
           const dy = segment.end.y - segment.start.y;
           const len = Math.hypot(dx, dy);
-          const stub = Math.min(10, len / 2);
+          const stub = Math.min(20, len / 2);
           if (len > 0 && stub > 0) {
             const ux = dx / len;
             const uy = dy / len;
             ctx.moveTo(segment.start.x, segment.start.y);
-            ctx.lineTo(segment.start.x + ux * stub, segment.start.y + uy * stub);
+            ctx.lineTo(
+              segment.start.x + ux * stub,
+              segment.start.y + uy * stub
+            );
             ctx.moveTo(segment.end.x, segment.end.y);
             ctx.lineTo(segment.end.x - ux * stub, segment.end.y - uy * stub);
           }
         }
         ctx.stroke();
 
-        ctx.fillStyle = selected ? "#0f172a" : "#1e293b";
-        ctx.strokeStyle = selected ? "#fcd34d" : "#94a3b8";
-        ctx.lineWidth = selected ? 3 : 1.5;
-        [segment.start, segment.end].forEach((point) => {
+        // Draw equilateral triangles at endpoints pointing toward the segment midline.
+        const angle = Math.atan2(
+          segment.end.y - segment.start.y,
+          segment.end.x - segment.start.x
+        );
+        const drawTriangle = (point: Point, pointTowardMid: boolean) => {
+          const size = ENDPOINT_RADIUS * 1.2;
+          const baseAngle = pointTowardMid ? angle + Math.PI : angle; // flip for far end
+          const a1 = baseAngle + (2 * Math.PI) / 3;
+          const a2 = baseAngle - (2 * Math.PI) / 3;
+          const p1 = {
+            x: point.x + Math.cos(baseAngle) * size,
+            y: point.y + Math.sin(baseAngle) * size,
+          };
+          const p2 = {
+            x: point.x + Math.cos(a1) * size,
+            y: point.y + Math.sin(a1) * size,
+          };
+          const p3 = {
+            x: point.x + Math.cos(a2) * size,
+            y: point.y + Math.sin(a2) * size,
+          };
           ctx.beginPath();
-          ctx.arc(point.x, point.y, ENDPOINT_RADIUS, 0, Math.PI * 2);
+          ctx.moveTo(p1.x, p1.y);
+          ctx.lineTo(p2.x, p2.y);
+          ctx.lineTo(p3.x, p3.y);
+          ctx.closePath();
+          ctx.fillStyle = selected ? "#0f172a" : "#1e293b";
+          ctx.strokeStyle = selected ? "#fcd34d" : "#94a3b8";
+          ctx.lineWidth = selected ? 3 : 1.5;
           ctx.fill();
           ctx.stroke();
-        });
+        };
+        // Start points toward end; end points back toward start (flipped).
+        drawTriangle(segment.start, false);
+        drawTriangle(segment.end, true);
 
         if (segment.text) {
           const midX = (segment.start.x + segment.end.x) / 2;
           const midY = (segment.start.y + segment.end.y) / 2;
-          const angle = Math.atan2(segment.end.y - segment.start.y, segment.end.x - segment.start.x);
+          const angle = Math.atan2(
+            segment.end.y - segment.start.y,
+            segment.end.x - segment.start.x
+          );
           ctx.save();
           ctx.translate(midX, midY);
           ctx.rotate(angle);
-          ctx.font = '12px "JetBrains Mono", monospace';
+          ctx.font = '14px "JetBrains Mono", monospace';
           ctx.fillStyle = selected ? "#fcd34d" : "#cbd5f5";
           ctx.textAlign = "center";
           ctx.textBaseline = "middle";
@@ -205,7 +244,7 @@ export function EditorPane({ width, height, addMode, className }: EditorPaneProp
         ctx.strokeStyle = selected ? "#f97316" : "#94a3b8";
         [segment.start, segment.end].forEach((point) => {
           ctx.beginPath();
-          ctx.arc(point.x, point.y, ENDPOINT_RADIUS, 0, Math.PI * 2);
+          ctx.arc(point.x, point.y, CONNECTOR_ENDPOINT_RADIUS, 0, Math.PI * 2);
           ctx.fill();
           ctx.stroke();
         });
@@ -223,12 +262,13 @@ export function EditorPane({ width, height, addMode, className }: EditorPaneProp
       selectedSegmentId,
       height,
       width,
-    ],
+    ]
   );
 
   const handlePointerDown = useCallback(
     (event: PointerEventData) => {
       const point = { x: event.x, y: event.y };
+      const isRightClick = event.buttons === 2;
 
       // Mask point?
       const maskIdx = hitTestMaskPoint(mask, point, 12);
@@ -305,6 +345,7 @@ export function EditorPane({ width, height, addMode, className }: EditorPaneProp
           now - lastClick.timestamp < 350
         ) {
           setLabelEditor({ id: segment.id, value: segment.text ?? "" });
+          setLabelAnchor({ u: point.x / width, v: point.y / height });
           setLastClick(null);
         } else {
           setLastClick({ id: segment.id, timestamp: now });
@@ -335,17 +376,8 @@ export function EditorPane({ width, height, addMode, className }: EditorPaneProp
         return;
       }
 
-      // Create new
-      if (addMode === "segment") {
-        const seg = createDefaultSegmentAtPoint(mask, point);
-        if (seg) {
-          setSegments([...segments, seg]);
-          setSelectedSegmentId(seg.id);
-          setMaskSelection(null);
-          setSelectedConnectorId(null);
-          setLabelEditor(null);
-        }
-      } else {
+      // Create new on click: left => segment, right => connector
+      if (isRightClick) {
         const conn = createConnectorAtPoint(mask, point, pxLength);
         if (conn) {
           setConnectors([...connectors, conn]);
@@ -354,10 +386,18 @@ export function EditorPane({ width, height, addMode, className }: EditorPaneProp
           setSelectedSegmentId(null);
           setLabelEditor(null);
         }
+      } else {
+        const seg = createDefaultSegmentAtPoint(mask, point);
+        if (seg) {
+          setSegments([...segments, seg]);
+          setSelectedSegmentId(seg.id);
+          setMaskSelection(null);
+          setSelectedConnectorId(null);
+          setLabelEditor(null);
+        }
       }
     },
     [
-      addMode,
       lastClick,
       connectors,
       dispatch,
@@ -366,7 +406,7 @@ export function EditorPane({ width, height, addMode, className }: EditorPaneProp
       segments,
       setConnectors,
       setSegments,
-    ],
+    ]
   );
 
   const handlePointerMove = useCallback(
@@ -375,7 +415,9 @@ export function EditorPane({ width, height, addMode, className }: EditorPaneProp
       const pointer = { x: event.x, y: event.y };
       if (dragInfo.kind === "mask" && dragInfo.maskIndex !== undefined) {
         const idx = dragInfo.maskIndex;
-        const nextPoints = mask.points.map((pt, i) => (i === idx ? pointer : pt));
+        const nextPoints = mask.points.map((pt, i) =>
+          i === idx ? pointer : pt
+        );
         dispatch({
           type: "SET_MASK",
           payload: { ...mask, points: nextPoints },
@@ -383,9 +425,18 @@ export function EditorPane({ width, height, addMode, className }: EditorPaneProp
         return;
       }
 
-      if (dragInfo.kind === "segment" && dragInfo.segmentIndex !== undefined && dragInfo.origin) {
+      if (
+        dragInfo.kind === "segment" &&
+        dragInfo.segmentIndex !== undefined &&
+        dragInfo.origin
+      ) {
         if (dragInfo.endpoint) {
-          const updated = moveEndpoint(dragInfo.origin, dragInfo.endpoint, pointer, mask);
+          const updated = moveEndpoint(
+            dragInfo.origin,
+            dragInfo.endpoint,
+            pointer,
+            mask
+          );
           if (updated) {
             const next = segments.slice();
             next[dragInfo.segmentIndex] = updated;
@@ -394,7 +445,10 @@ export function EditorPane({ width, height, addMode, className }: EditorPaneProp
           return;
         }
         if (dragInfo.startPointer) {
-          const delta = { x: pointer.x - dragInfo.startPointer.x, y: pointer.y - dragInfo.startPointer.y };
+          const delta = {
+            x: pointer.x - dragInfo.startPointer.x,
+            y: pointer.y - dragInfo.startPointer.y,
+          };
           const moved = moveSegment(dragInfo.origin, delta, mask);
           if (moved) {
             const next = segments.slice();
@@ -405,9 +459,19 @@ export function EditorPane({ width, height, addMode, className }: EditorPaneProp
         return;
       }
 
-      if (dragInfo.kind === "connector" && dragInfo.segmentIndex !== undefined && dragInfo.origin) {
+      if (
+        dragInfo.kind === "connector" &&
+        dragInfo.segmentIndex !== undefined &&
+        dragInfo.origin
+      ) {
         if (dragInfo.endpoint) {
-          const updated = moveConnectorEndpoint(dragInfo.origin, dragInfo.endpoint, pointer, mask, pxLength);
+          const updated = moveConnectorEndpoint(
+            dragInfo.origin,
+            dragInfo.endpoint,
+            pointer,
+            mask,
+            pxLength
+          );
           if (updated) {
             const next = connectors.slice();
             next[dragInfo.segmentIndex] = updated;
@@ -416,7 +480,10 @@ export function EditorPane({ width, height, addMode, className }: EditorPaneProp
           return;
         }
         if (dragInfo.startPointer) {
-          const delta = { x: pointer.x - dragInfo.startPointer.x, y: pointer.y - dragInfo.startPointer.y };
+          const delta = {
+            x: pointer.x - dragInfo.startPointer.x,
+            y: pointer.y - dragInfo.startPointer.y,
+          };
           const moved = moveConnector(dragInfo.origin, delta, mask);
           if (moved) {
             const next = connectors.slice();
@@ -426,7 +493,16 @@ export function EditorPane({ width, height, addMode, className }: EditorPaneProp
         }
       }
     },
-    [connectors, dragInfo, dispatch, mask, pxLength, segments, setConnectors, setSegments],
+    [
+      connectors,
+      dragInfo,
+      dispatch,
+      mask,
+      pxLength,
+      segments,
+      setConnectors,
+      setSegments,
+    ]
   );
 
   const clearDrag = useCallback(() => setDragInfo(null), []);
@@ -440,7 +516,7 @@ export function EditorPane({ width, height, addMode, className }: EditorPaneProp
         if (updated !== mask) {
           dispatch({ type: "SET_MASK", payload: updated });
           setMaskSelection((prev) =>
-            prev === null ? null : Math.min(prev, updated.points.length - 1),
+            prev === null ? null : Math.min(prev, updated.points.length - 1)
           );
         }
         return;
@@ -450,7 +526,9 @@ export function EditorPane({ width, height, addMode, className }: EditorPaneProp
         const filtered = segments.filter((s) => s.id !== selectedSegmentId);
         setSegments(filtered);
         setSelectedSegmentId(null);
-        setLabelEditor((prev) => (prev?.id === selectedSegmentId ? null : prev));
+        setLabelEditor((prev) =>
+          prev?.id === selectedSegmentId ? null : prev
+        );
         return;
       }
       if (selectedConnectorId) {
@@ -470,23 +548,33 @@ export function EditorPane({ width, height, addMode, className }: EditorPaneProp
       segments,
       setConnectors,
       setSegments,
-    ],
+    ]
   );
 
   const editorPosition = useMemo(() => {
     if (!labelEditor) return null;
-    const index = segments.findIndex((segment) => segment.id === labelEditor.id);
+    const index = segments.findIndex(
+      (segment) => segment.id === labelEditor.id
+    );
+    if (labelAnchor) {
+      return {
+        x: labelAnchor.u * width,
+        y: labelAnchor.v * height,
+      };
+    }
     if (index === -1) return null;
     const segment = segments[index];
     return {
       x: (segment.start.x + segment.end.x) / 2,
       y: (segment.start.y + segment.end.y) / 2,
     };
-  }, [labelEditor, segments]);
+  }, [labelAnchor, labelEditor, segments, width, height]);
 
   const handleLabelCommit = useCallback(() => {
     if (!labelEditor) return;
-    const index = segments.findIndex((segment) => segment.id === labelEditor.id);
+    const index = segments.findIndex(
+      (segment) => segment.id === labelEditor.id
+    );
     if (index === -1) {
       setLabelEditor(null);
       return;
@@ -495,6 +583,7 @@ export function EditorPane({ width, height, addMode, className }: EditorPaneProp
     next[index] = { ...next[index], text: labelEditor.value };
     setSegments(next);
     setLabelEditor(null);
+    setLabelAnchor(null);
   }, [labelEditor, segments, setSegments]);
 
   return (
@@ -514,15 +603,21 @@ export function EditorPane({ width, height, addMode, className }: EditorPaneProp
       {labelEditor && editorPosition ? (
         <input
           autoFocus
-          className="absolute rounded border border-slate-500 bg-slate-900/95 px-2 py-1 text-xs text-slate-100 shadow-lg"
+          className="absolute rounded border border-slate-500 bg-slate-900/95 px-2 py-1 text-sm text-slate-100 shadow-lg"
           style={{
-            top: editorPosition.y - 12,
-            left: editorPosition.x - 60,
+            top: `${(editorPosition.y / height) * 100}%`,
+            left: `${(editorPosition.x / width) * 100}%`,
             width: 120,
+            transform: "translate(calc(-50% + 10px), calc(-120% + 20px))",
           }}
           value={labelEditor.value}
-          onChange={(event) => setLabelEditor({ ...labelEditor, value: event.target.value })}
-          onBlur={handleLabelCommit}
+          onChange={(event) =>
+            setLabelEditor({ ...labelEditor, value: event.target.value })
+          }
+          onBlur={() => {
+            handleLabelCommit();
+            setLabelAnchor(null);
+          }}
           onKeyDown={(event) => {
             if (event.key === "Enter") {
               event.preventDefault();
@@ -530,6 +625,7 @@ export function EditorPane({ width, height, addMode, className }: EditorPaneProp
             } else if (event.key === "Escape") {
               event.preventDefault();
               setLabelEditor(null);
+              setLabelAnchor(null);
             }
           }}
         />

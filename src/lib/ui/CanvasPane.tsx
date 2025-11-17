@@ -118,6 +118,10 @@ export function CanvasPane({
     [buildPointerEvent, onPointerLeave],
   )
 
+  const handleContextMenu = useCallback((event: React.MouseEvent<HTMLCanvasElement>) => {
+    event.preventDefault()
+  }, [])
+
   const resolvedTabIndex = tabIndex ?? (onKeyDown ? 0 : undefined)
 
   return (
@@ -131,6 +135,7 @@ export function CanvasPane({
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
       onPointerLeave={handlePointerLeave}
+      onContextMenu={handleContextMenu}
       onKeyDown={onKeyDown}
     />
   )

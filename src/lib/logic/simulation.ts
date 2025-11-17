@@ -65,7 +65,7 @@ export function createSimulationWorld(
       bodyB: attachB.body,
       pointB: attachB.point,
       length,
-      stiffness: 0.2,
+      stiffness: 0.5,
       damping: 0.1,
     });
     Matter.Composite.add(world, constraint);

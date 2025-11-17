@@ -13,7 +13,7 @@ import {
   mmToPx,
 } from "../logic/connectors";
 
-const ENDPOINT_RADIUS = 8;
+const ENDPOINT_RADIUS = 6;
 
 interface DragInfo {
   mode: "segment" | "start" | "end";
