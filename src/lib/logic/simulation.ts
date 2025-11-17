@@ -12,6 +12,7 @@ import type { LineSegment, Polygon } from "../types";
 export interface SimulationWorld {
   engine: Matter.Engine;
   destroy: () => void;
+  attachments: Record<string, Matter.Body | null>;
 }
 
 export function createSimulationWorld(
@@ -25,6 +26,7 @@ export function createSimulationWorld(
   world.gravity.y = 1;
 
   const bodies: Matter.Body[] = [];
+  const attachments: Record<string, Matter.Body | null> = {};
 
   polygons.forEach((poly) => {
     if (poly.points.length < 3) return;
@@ -50,7 +52,7 @@ export function createSimulationWorld(
 
   Matter.Composite.add(world, bodies);
 
-  connectors.forEach((connector) => {
+  connectors.forEach((connector, idx) => {
     const attachA = attachToBody(world, bodies, connector.start);
     const attachB = attachToBody(world, bodies, connector.end);
 
@@ -69,6 +71,9 @@ export function createSimulationWorld(
       damping: 0.1,
     });
     Matter.Composite.add(world, constraint);
+
+    attachments[`${idx}-start`] = attachA.isStub ? attachA.body : null;
+    attachments[`${idx}-end`] = attachB.isStub ? attachB.body : null;
   });
 
   const destroy = () => {
@@ -76,7 +81,7 @@ export function createSimulationWorld(
     Matter.Engine.clear(engine);
   };
 
-  return { engine, destroy };
+  return { engine, destroy, attachments };
 }
 
 function attachToBody(
@@ -92,6 +97,7 @@ function attachToBody(
           x: point.x - body.position.x,
           y: point.y - body.position.y,
         },
+        isStub: false,
       };
     }
   }
@@ -101,5 +107,5 @@ function attachToBody(
     render: { visible: false },
   });
   Matter.Composite.add(world, stub);
-  return { body: stub, point: { x: 0, y: 0 } };
+  return { body: stub, point: { x: 0, y: 0 }, isStub: true };
 }

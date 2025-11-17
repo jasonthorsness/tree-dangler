@@ -17,6 +17,10 @@ function EditorCard() {
     setResetToken((token) => token + 1);
   }, [state.piecePolygons, state.connectors]);
 
+  const handleReset = useCallback(() => {
+    setResetToken((token) => token + 1);
+  }, []);
+
   const handleSave = useCallback(() => {
     const payload = {
       mask: state.mask,
@@ -226,7 +230,7 @@ function EditorCard() {
               </button>
               <button
                 type="button"
-                onClick={() => setResetToken((token) => token + 1)}
+                onClick={handleReset}
                 className="rounded-full border border-purple-400/50 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-purple-100 transition hover:border-purple-300"
               >
                 Reset Simulation
@@ -265,6 +269,7 @@ function EditorCard() {
               width={width}
               height={height}
               resetToken={resetToken}
+              onResetRequest={handleReset}
               className="rounded-2xl border border-slate-800 w-full max-w-[600px] aspect-[3/4]"
             />
           </div>
