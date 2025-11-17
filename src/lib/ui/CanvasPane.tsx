@@ -12,6 +12,7 @@ export interface CanvasPaneProps {
   height: number
   className?: string
   tabIndex?: number
+  fitContainer?: boolean
   onDraw?: (ctx: CanvasRenderingContext2D) => void
   onPointerDown?: (event: PointerEventData) => void
   onPointerMove?: (event: PointerEventData) => void
@@ -25,6 +26,7 @@ export function CanvasPane({
   height,
   className,
   tabIndex,
+  fitContainer = false,
   onDraw,
   onPointerDown,
   onPointerMove,
@@ -46,8 +48,13 @@ export function CanvasPane({
     if (canvas.width !== targetWidth || canvas.height !== targetHeight) {
       canvas.width = targetWidth
       canvas.height = targetHeight
-      canvas.style.width = `${width}px`
-      canvas.style.height = `${height}px`
+      if (fitContainer) {
+        canvas.style.width = '100%'
+        canvas.style.height = '100%'
+      } else {
+        canvas.style.width = `${width}px`
+        canvas.style.height = `${height}px`
+      }
     }
 
     const ctx = canvas.getContext('2d')

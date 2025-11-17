@@ -17,8 +17,8 @@ export interface SimulationWorld {
 export function createSimulationWorld(
   polygons: Polygon[],
   connectors: LineSegment[],
-  width: number,
-  height: number
+  _width: number,
+  _height: number
 ): SimulationWorld {
   const engine = Matter.Engine.create();
   const world = engine.world;
@@ -34,16 +34,13 @@ export function createSimulationWorld(
       0,
       [vertices],
       {
-        friction: 0.3,
-        restitution: 0.1,
+        friction: 0.5,
+        restitution: 0.01,
         density: 0.002,
       },
       true,
       0.5
     );
-    console.log(body.parts.length);
-    console.log((window as any).decomp);
-    console.log((Matter.Common as any)._decomp);
     if (body) {
       const center = Matter.Vertices.centre(vertices);
       Matter.Body.setPosition(body, center);
@@ -52,26 +49,6 @@ export function createSimulationWorld(
   });
 
   Matter.Composite.add(world, bodies);
-
-  const boundaries = [
-    Matter.Bodies.rectangle(width / 2, -50, width, 100, {
-      isStatic: true,
-      render: { visible: false },
-    }),
-    Matter.Bodies.rectangle(width / 2, height + 50, width, 100, {
-      isStatic: true,
-      render: { visible: false },
-    }),
-    Matter.Bodies.rectangle(-50, height / 2, 100, height, {
-      isStatic: true,
-      render: { visible: false },
-    }),
-    Matter.Bodies.rectangle(width + 50, height / 2, 100, height, {
-      isStatic: true,
-      render: { visible: false },
-    }),
-  ];
-  Matter.Composite.add(world, boundaries);
 
   connectors.forEach((connector) => {
     const attachA = attachToBody(world, bodies, connector.start);
@@ -88,8 +65,8 @@ export function createSimulationWorld(
       bodyB: attachB.body,
       pointB: attachB.point,
       length,
-      stiffness: 0.6,
-      damping: 0.05,
+      stiffness: 0.2,
+      damping: 0.1,
     });
     Matter.Composite.add(world, constraint);
   });

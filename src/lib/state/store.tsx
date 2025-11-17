@@ -21,16 +21,9 @@ type Action =
   | { type: 'SET_CONNECTOR_LENGTH'; payload: number }
   | { type: 'SET_SVG_STRING'; payload: string };
 
-// Initial state with a default triangle mask
+// Initial state; populated from default_scene.json on mount
 const initialState: TreeDanglerState = {
-  mask: {
-    id: 'default-mask',
-    points: [
-      { x: 200, y: 100 },
-      { x: 100, y: 300 },
-      { x: 300, y: 300 },
-    ],
-  },
+  mask: { id: "default-mask", points: [] },
   segments: [],
   voronoiPolygons: [],
   voronoiRaster: undefined,
@@ -101,6 +94,38 @@ const TreeDanglerContext = createContext<TreeDanglerContextValue | undefined>(un
 // Provider component
 export function TreeDanglerProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(reducer, initialState);
+
+  // Auto-load default scene from packaged JSON
+  useEffect(() => {
+    fetch("/default_scene.json")
+      .then((resp) => resp.json())
+      .then((data) => {
+        if (data.mask?.points) {
+          dispatch({ type: "SET_MASK", payload: data.mask });
+        }
+        if (Array.isArray(data.segments)) {
+          dispatch({ type: "SET_SEGMENTS", payload: data.segments });
+        }
+        if (Array.isArray(data.connectors)) {
+          dispatch({ type: "SET_CONNECTORS", payload: data.connectors });
+        }
+        if (data.noise) {
+          const { shrinkThreshold, growThreshold, noiseAmplitude, noiseSeed, connectorLength } =
+            data.noise;
+          dispatch({
+            type: "SET_DISTANCE_CONFIG",
+            payload: { shrinkThreshold, growThreshold, noiseAmplitude, noiseSeed },
+          });
+          if (typeof connectorLength === "number") {
+            dispatch({ type: "SET_CONNECTOR_LENGTH", payload: connectorLength });
+          }
+        }
+      })
+      .catch((err) => {
+        console.error("Failed to load default scene", err);
+      });
+  }, []);
+
   useVoronoiAutoCompute(state.mask, state.segments, dispatch);
   useVoronoiRasterize(state.mask, state.voronoiPolygons, dispatch);
   useDistanceProcessing(
@@ -177,7 +202,8 @@ function useVoronoiAutoCompute(mask: MaskPolygon, segments: LineSegment[], dispa
   }, [mask, segments]);
 }
 
-const DEFAULT_RASTER_SIZE = 600;
+const DEFAULT_RASTER_WIDTH = 600;
+const DEFAULT_RASTER_HEIGHT = 800;
 
 function useVoronoiRasterize(
   mask: MaskPolygon,
@@ -192,8 +218,8 @@ function useVoronoiRasterize(
       return;
     }
     const maskBitmap = rasterizeVoronoiMask(polygons, mask, {
-      width: DEFAULT_RASTER_SIZE,
-      height: DEFAULT_RASTER_SIZE,
+      width: DEFAULT_RASTER_WIDTH,
+      height: DEFAULT_RASTER_HEIGHT,
       strokeWidth: 2,
     });
     if (maskBitmap) {

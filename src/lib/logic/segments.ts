@@ -66,7 +66,7 @@ export function createDefaultSegmentAtPoint(
     id: crypto.randomUUID(),
     start,
     end,
-    text: '',
+    text: 'text',
   }
 }
 

@@ -1,3 +1,5 @@
+import { useMemo } from "react";
+
 import { useTreeDanglerState } from "../state/store";
 
 interface SvgExportPaneProps {
@@ -8,6 +10,13 @@ export function SvgExportPane({ className }: SvgExportPaneProps) {
   const {
     state: { svgString },
   } = useTreeDanglerState();
+
+  const displaySvg = useMemo(() => {
+    if (!svgString) return undefined;
+    return svgString
+      .replace(/width="[^"]*"/, 'width="100%"')
+      .replace(/height="[^"]*"/, 'height="100%"');
+  }, [svgString]);
 
   const handleDownload = () => {
     if (!svgString) return;
@@ -22,12 +31,18 @@ export function SvgExportPane({ className }: SvgExportPaneProps) {
 
   return (
     <div className={className}>
-      <div className="flex h-[600px] w-[600px] items-center justify-center rounded-2xl border border-slate-800 bg-slate-900/40">
-        {svgString ? (
-          <div className="w-[600px] h-[600px]" dangerouslySetInnerHTML={{ __html: svgString }} />
-        ) : (
-          <p className="text-xs text-slate-500">Generate geometry first to preview the SVG.</p>
-        )}
+      <div className="flex items-center justify-center rounded-2xl border border-slate-800 bg-slate-900/40">
+        <div className="w-full max-w-[600px] aspect-[3/4] [&>svg]:h-full [&>svg]:w-full">
+          {displaySvg ? (
+            <div className="w-full h-full" dangerouslySetInnerHTML={{ __html: displaySvg }} />
+          ) : (
+            <div className="flex h-full w-full items-center justify-center">
+              <p className="text-xs text-slate-500">
+                Generate geometry first to preview the SVG.
+              </p>
+            </div>
+          )}
+        </div>
       </div>
       <div className="mt-4 flex gap-3">
         <button

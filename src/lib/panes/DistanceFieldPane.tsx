@@ -8,11 +8,17 @@ interface DistanceFieldPaneProps {
   width: number;
   height: number;
   className?: string;
+  showPreview?: boolean;
 }
 
-export function DistanceFieldPane({ width, height, className }: DistanceFieldPaneProps) {
+export function DistanceFieldPane({
+  width,
+  height,
+  className,
+  showPreview = true,
+}: DistanceFieldPaneProps) {
   const {
-    state: { shrinkThreshold, growThreshold, noiseAmplitude, noiseSeed },
+    state: { shrinkThreshold, growThreshold, noiseAmplitude, noiseSeed, connectorLength },
     dispatch,
   } = useTreeDanglerState();
 
@@ -32,11 +38,13 @@ export function DistanceFieldPane({ width, height, className }: DistanceFieldPan
 
   return (
     <div className={className}>
-      <DistancePreviewPane
-        width={width}
-        height={height}
-        className="rounded-2xl border border-slate-800"
-      />
+      {showPreview ? (
+        <DistancePreviewPane
+          width={width}
+          height={height}
+          className="rounded-2xl border border-slate-800"
+        />
+      ) : null}
       <div className="mt-4 space-y-3 text-sm text-slate-300">
         <div className="flex flex-col gap-1">
           <label className="flex items-center justify-between text-xs uppercase tracking-widest text-slate-400">
@@ -96,6 +104,22 @@ export function DistanceFieldPane({ width, height, className }: DistanceFieldPan
               }
               className="rounded border border-slate-700 bg-slate-900 px-2 py-1 text-slate-100"
             />
+          </label>
+        </div>
+        <div className="space-y-1 text-xs">
+          <label className="flex items-center gap-2">
+            <span className="text-slate-400 uppercase tracking-[0.25em]">Connector length</span>
+            <input
+              type="number"
+              min={2}
+              step={0.5}
+              value={connectorLength}
+              onChange={(event) =>
+                dispatch({ type: "SET_CONNECTOR_LENGTH", payload: Number(event.target.value) })
+              }
+              className="w-20 rounded border border-slate-700 bg-slate-900 px-2 py-1 text-slate-100"
+            />
+            <span className="text-slate-500">mm</span>
           </label>
         </div>
       </div>
