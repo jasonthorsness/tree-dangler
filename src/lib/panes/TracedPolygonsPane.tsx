@@ -18,7 +18,11 @@ interface TracedPolygonsPaneProps {
   className?: string;
 }
 
-export function TracedPolygonsPane({ width, height, className }: TracedPolygonsPaneProps) {
+export function TracedPolygonsPane({
+  width,
+  height,
+  className,
+}: TracedPolygonsPaneProps) {
   const {
     state: { piecePolygons },
   } = useTreeDanglerState();
@@ -46,10 +50,17 @@ export function TracedPolygonsPane({ width, height, className }: TracedPolygonsP
         ctx.stroke();
       });
     },
-    [height, piecePolygons, width],
+    [height, piecePolygons, width]
   );
 
-  return <CanvasPane width={width} height={height} className={className} onDraw={drawPane} />;
+  return (
+    <CanvasPane
+      width={width}
+      height={height}
+      className={className}
+      onDraw={drawPane}
+    />
+  );
 }
 
 export default TracedPolygonsPane;

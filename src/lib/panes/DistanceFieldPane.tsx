@@ -18,7 +18,13 @@ export function DistanceFieldPane({
   showPreview = true,
 }: DistanceFieldPaneProps) {
   const {
-    state: { shrinkThreshold, growThreshold, noiseAmplitude, noiseSeed, connectorLength },
+    state: {
+      shrinkThreshold,
+      growThreshold,
+      noiseAmplitude,
+      noiseSeed,
+      connectorLength,
+    },
     dispatch,
   } = useTreeDanglerState();
 
@@ -33,7 +39,7 @@ export function DistanceFieldPane({
     ) => {
       dispatch({ type: "SET_DISTANCE_CONFIG", payload: patch });
     },
-    [dispatch],
+    [dispatch]
   );
 
   return (
@@ -108,14 +114,19 @@ export function DistanceFieldPane({
         </div>
         <div className="space-y-1 text-xs">
           <label className="flex items-center gap-2">
-            <span className="text-slate-400 uppercase tracking-[0.25em]">Connector length</span>
+            <span className="text-slate-400 uppercase tracking-[0.25em]">
+              Connector length
+            </span>
             <input
               type="number"
               min={2}
               step={0.5}
               value={connectorLength}
               onChange={(event) =>
-                dispatch({ type: "SET_CONNECTOR_LENGTH", payload: Number(event.target.value) })
+                dispatch({
+                  type: "SET_CONNECTOR_LENGTH",
+                  payload: Number(event.target.value),
+                })
               }
               className="w-20 rounded border border-slate-700 bg-slate-900 px-2 py-1 text-slate-100"
             />

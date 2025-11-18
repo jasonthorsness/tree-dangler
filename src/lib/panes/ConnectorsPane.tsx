@@ -28,7 +28,11 @@ interface ConnectorsPaneProps {
   className?: string;
 }
 
-export function ConnectorsPane({ width, height, className }: ConnectorsPaneProps) {
+export function ConnectorsPane({
+  width,
+  height,
+  className,
+}: ConnectorsPaneProps) {
   const {
     state: { mask, connectors, connectorLength, piecePolygons },
     dispatch,
@@ -37,7 +41,8 @@ export function ConnectorsPane({ width, height, className }: ConnectorsPaneProps
   const [dragInfo, setDragInfo] = useState<DragInfo | null>(null);
 
   const updateConnectors = useCallback(
-    (next: LineSegment[]) => dispatch({ type: "SET_CONNECTORS", payload: next }),
+    (next: LineSegment[]) =>
+      dispatch({ type: "SET_CONNECTORS", payload: next }),
     [dispatch]
   );
 
@@ -146,7 +151,10 @@ export function ConnectorsPane({ width, height, className }: ConnectorsPaneProps
       const { mode, segmentIndex, origin, startPointer } = dragInfo;
 
       if (mode === "segment") {
-        const delta = { x: pointer.x - startPointer.x, y: pointer.y - startPointer.y };
+        const delta = {
+          x: pointer.x - startPointer.x,
+          y: pointer.y - startPointer.y,
+        };
         const moved = moveConnector(origin, delta, mask);
         if (moved) {
           const next = connectors.slice();
@@ -156,7 +164,13 @@ export function ConnectorsPane({ width, height, className }: ConnectorsPaneProps
         return;
       }
 
-      const updated = moveConnectorEndpoint(origin, mode, pointer, mask, pxLength);
+      const updated = moveConnectorEndpoint(
+        origin,
+        mode,
+        pointer,
+        mask,
+        pxLength
+      );
       if (updated) {
         const next = connectors.slice();
         next[segmentIndex] = updated;

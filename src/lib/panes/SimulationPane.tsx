@@ -30,9 +30,10 @@ export function SimulationPane({
   const runningRef = useRef<number | undefined>(undefined);
   const pausedRef = useRef(false);
   const [hasError, setHasError] = useState(false);
-  const dragRef = useRef<{ segmentIndex: number; endpoint: "start" | "end" } | null>(
-    null
-  );
+  const dragRef = useRef<{
+    segmentIndex: number;
+    endpoint: "start" | "end";
+  } | null>(null);
 
   const buildPointer = useCallback(
     (event: React.PointerEvent<HTMLCanvasElement>) => {
@@ -52,7 +53,10 @@ export function SimulationPane({
       const { x, y } = buildPointer(event);
       const hit = hitTestConnectorEndpoint(connectors, { x, y }, 12);
       if (hit) {
-        dragRef.current = { segmentIndex: hit.segmentIndex, endpoint: hit.endpoint };
+        dragRef.current = {
+          segmentIndex: hit.segmentIndex,
+          endpoint: hit.endpoint,
+        };
         event.preventDefault();
       }
     },
@@ -199,26 +203,26 @@ export function SimulationPane({
           ctx.strokeStyle = "rgba(248, 113, 113, 0.7)";
           ctx.lineWidth = 1;
           const constraints = Matter.Composite.allConstraints(engine.world);
-      constraints.forEach((constraint) => {
-        const pointA = constraint.bodyA
-          ? Matter.Vector.add(
-              constraint.bodyA.position,
-              constraint.pointA as Matter.Vector
-            )
-          : constraint.pointA;
-        const pointB = constraint.bodyB
-          ? Matter.Vector.add(
-              constraint.bodyB.position,
-              constraint.pointB as Matter.Vector
-            )
-          : constraint.pointB;
-        if (pointA && pointB) {
-          ctx.beginPath();
-          ctx.moveTo(pointA.x, pointA.y);
-          ctx.lineTo(pointB.x, pointB.y);
-          ctx.stroke();
-        }
-      });
+          constraints.forEach((constraint) => {
+            const pointA = constraint.bodyA
+              ? Matter.Vector.add(
+                  constraint.bodyA.position,
+                  constraint.pointA as Matter.Vector
+                )
+              : constraint.pointA;
+            const pointB = constraint.bodyB
+              ? Matter.Vector.add(
+                  constraint.bodyB.position,
+                  constraint.pointB as Matter.Vector
+                )
+              : constraint.pointB;
+            if (pointA && pointB) {
+              ctx.beginPath();
+              ctx.moveTo(pointA.x, pointA.y);
+              ctx.lineTo(pointB.x, pointB.y);
+              ctx.stroke();
+            }
+          });
 
           // Draw draggable fixed endpoints
           Object.entries(attachmentsRef.current).forEach(([, body]) => {

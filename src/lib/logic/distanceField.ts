@@ -79,7 +79,6 @@ export function rasterizeVoronoiMask(
   };
 }
 
-
 const INF = 1e20;
 
 function distanceTransform1D(

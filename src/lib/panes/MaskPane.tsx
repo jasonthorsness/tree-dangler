@@ -1,162 +1,170 @@
-import { useCallback, useState, type KeyboardEvent } from 'react'
+import { useCallback, useState, type KeyboardEvent } from "react";
 
-import type { Point } from '../types'
+import type { Point } from "../types";
 import {
   deleteMaskPoint,
   hitTestMaskPoint,
   hitTestMaskSegment,
   insertPointIntoSegment,
-} from '../logic/mask'
-import { useTreeDanglerState } from '../state/store'
-import { CanvasPane, type PointerEventData } from '../ui/CanvasPane'
-import { drawMetricBackground, drawMetricRulers } from '../ui/metricGrid'
+} from "../logic/mask";
+import { useTreeDanglerState } from "../state/store";
+import { CanvasPane, type PointerEventData } from "../ui/CanvasPane";
+import { drawMetricBackground, drawMetricRulers } from "../ui/metricGrid";
 
-const POINT_HIT_RADIUS = 12
-const SEGMENT_TOLERANCE = 10
-const POINT_DRAW_RADIUS = 6
+const POINT_HIT_RADIUS = 12;
+const SEGMENT_TOLERANCE = 10;
+const POINT_DRAW_RADIUS = 6;
 
 export interface MaskPaneProps {
-  width: number
-  height: number
-  className?: string
+  width: number;
+  height: number;
+  className?: string;
 }
 
 export function MaskPane({ width, height, className }: MaskPaneProps) {
   const {
     state: { mask },
     dispatch,
-  } = useTreeDanglerState()
-  const [selectedPoint, setSelectedPoint] = useState<number | null>(null)
-  const [draggingPoint, setDraggingPoint] = useState<number | null>(null)
+  } = useTreeDanglerState();
+  const [selectedPoint, setSelectedPoint] = useState<number | null>(null);
+  const [draggingPoint, setDraggingPoint] = useState<number | null>(null);
 
   const updatePoint = useCallback(
     (index: number, position: Point) => {
-      const { points } = mask
-      if (index < 0 || index >= points.length) return
+      const { points } = mask;
+      if (index < 0 || index >= points.length) return;
       const nextPoints = points.map((pt, idx) =>
-        idx === index ? { x: position.x, y: position.y } : pt,
-      )
+        idx === index ? { x: position.x, y: position.y } : pt
+      );
       if (
         nextPoints[index].x === points[index].x &&
         nextPoints[index].y === points[index].y
       ) {
-        return
+        return;
       }
       dispatch({
-        type: 'SET_MASK',
+        type: "SET_MASK",
         payload: {
           ...mask,
           points: nextPoints,
         },
-      })
+      });
     },
-    [dispatch, mask],
-  )
+    [dispatch, mask]
+  );
 
   const drawMask = useCallback(
     (ctx: CanvasRenderingContext2D) => {
-      if (!mask.points.length) return
+      if (!mask.points.length) return;
 
-      ctx.clearRect(0, 0, width, height)
-      drawMetricBackground(ctx, width, height)
+      ctx.clearRect(0, 0, width, height);
+      drawMetricBackground(ctx, width, height);
 
       // Mask polygon fill
-      ctx.beginPath()
-      ctx.moveTo(mask.points[0].x, mask.points[0].y)
+      ctx.beginPath();
+      ctx.moveTo(mask.points[0].x, mask.points[0].y);
       for (let i = 1; i < mask.points.length; i += 1) {
-        ctx.lineTo(mask.points[i].x, mask.points[i].y)
+        ctx.lineTo(mask.points[i].x, mask.points[i].y);
       }
-      ctx.closePath()
+      ctx.closePath();
 
-      ctx.fillStyle = 'rgba(16, 185, 129, 0.18)'
-      ctx.fill()
+      ctx.fillStyle = "rgba(16, 185, 129, 0.18)";
+      ctx.fill();
 
-      ctx.strokeStyle = 'rgba(16, 185, 129, 0.8)'
-      ctx.lineWidth = 3
-      ctx.setLineDash([6, 4])
-      ctx.stroke()
-      ctx.setLineDash([])
+      ctx.strokeStyle = "rgba(16, 185, 129, 0.8)";
+      ctx.lineWidth = 3;
+      ctx.setLineDash([6, 4]);
+      ctx.stroke();
+      ctx.setLineDash([]);
 
       // Points
       mask.points.forEach((point, index) => {
-        ctx.beginPath()
-        ctx.arc(point.x, point.y, POINT_DRAW_RADIUS, 0, Math.PI * 2)
+        ctx.beginPath();
+        ctx.arc(point.x, point.y, POINT_DRAW_RADIUS, 0, Math.PI * 2);
         if (index === selectedPoint) {
-          ctx.fillStyle = '#f0fdf4'
-          ctx.strokeStyle = '#10b981'
-          ctx.lineWidth = 2
+          ctx.fillStyle = "#f0fdf4";
+          ctx.strokeStyle = "#10b981";
+          ctx.lineWidth = 2;
         } else {
-          ctx.fillStyle = '#0f172a'
-          ctx.strokeStyle = 'rgba(15, 118, 110, 0.9)'
-          ctx.lineWidth = 1.5
+          ctx.fillStyle = "#0f172a";
+          ctx.strokeStyle = "rgba(15, 118, 110, 0.9)";
+          ctx.lineWidth = 1.5;
         }
-        ctx.fill()
-        ctx.stroke()
-      })
-      drawMetricRulers(ctx, width, height)
+        ctx.fill();
+        ctx.stroke();
+      });
+      drawMetricRulers(ctx, width, height);
     },
-    [mask.points, height, width, selectedPoint],
-  )
+    [mask.points, height, width, selectedPoint]
+  );
 
   const handlePointer = useCallback(
     (event: PointerEventData) => {
-      const clickPoint: Point = { x: event.x, y: event.y }
-      const pointIndex = hitTestMaskPoint(mask, clickPoint, POINT_HIT_RADIUS)
+      const clickPoint: Point = { x: event.x, y: event.y };
+      const pointIndex = hitTestMaskPoint(mask, clickPoint, POINT_HIT_RADIUS);
       if (pointIndex !== -1) {
-        setSelectedPoint(pointIndex)
-        setDraggingPoint(pointIndex)
-        updatePoint(pointIndex, clickPoint)
-        return
+        setSelectedPoint(pointIndex);
+        setDraggingPoint(pointIndex);
+        updatePoint(pointIndex, clickPoint);
+        return;
       }
 
-      const segmentIndex = hitTestMaskSegment(mask, clickPoint, SEGMENT_TOLERANCE)
+      const segmentIndex = hitTestMaskSegment(
+        mask,
+        clickPoint,
+        SEGMENT_TOLERANCE
+      );
       if (segmentIndex !== -1) {
-        const updatedMask = insertPointIntoSegment(mask, segmentIndex, clickPoint)
-        dispatch({ type: 'SET_MASK', payload: updatedMask })
-        setSelectedPoint(segmentIndex + 1)
-        setDraggingPoint(segmentIndex + 1)
-        return
+        const updatedMask = insertPointIntoSegment(
+          mask,
+          segmentIndex,
+          clickPoint
+        );
+        dispatch({ type: "SET_MASK", payload: updatedMask });
+        setSelectedPoint(segmentIndex + 1);
+        setDraggingPoint(segmentIndex + 1);
+        return;
       }
 
-      setSelectedPoint(null)
-      setDraggingPoint(null)
+      setSelectedPoint(null);
+      setDraggingPoint(null);
     },
-    [dispatch, mask, updatePoint],
-  )
+    [dispatch, mask, updatePoint]
+  );
 
   const handlePointerMove = useCallback(
     (event: PointerEventData) => {
-      if (draggingPoint === null) return
-      updatePoint(draggingPoint, { x: event.x, y: event.y })
+      if (draggingPoint === null) return;
+      updatePoint(draggingPoint, { x: event.x, y: event.y });
     },
-    [draggingPoint, updatePoint],
-  )
+    [draggingPoint, updatePoint]
+  );
 
   const handlePointerUp = useCallback(() => {
-    setDraggingPoint(null)
-  }, [])
+    setDraggingPoint(null);
+  }, []);
 
   const handlePointerLeave = useCallback(() => {
-    setDraggingPoint(null)
-  }, [])
+    setDraggingPoint(null);
+  }, []);
 
   const handleKeyDown = useCallback(
     (event: KeyboardEvent<HTMLCanvasElement>) => {
-      if (selectedPoint === null) return
-      if (event.key !== 'Delete' && event.key !== 'Backspace') return
-      event.preventDefault()
+      if (selectedPoint === null) return;
+      if (event.key !== "Delete" && event.key !== "Backspace") return;
+      event.preventDefault();
 
-      const updatedMask = deleteMaskPoint(mask, selectedPoint)
-      if (updatedMask === mask) return
-      dispatch({ type: 'SET_MASK', payload: updatedMask })
+      const updatedMask = deleteMaskPoint(mask, selectedPoint);
+      if (updatedMask === mask) return;
+      dispatch({ type: "SET_MASK", payload: updatedMask });
       setSelectedPoint((prev) => {
-        if (prev === null) return null
-        return Math.min(prev, updatedMask.points.length - 1)
-      })
-      setDraggingPoint(null)
+        if (prev === null) return null;
+        return Math.min(prev, updatedMask.points.length - 1);
+      });
+      setDraggingPoint(null);
     },
-    [dispatch, mask, selectedPoint],
-  )
+    [dispatch, mask, selectedPoint]
+  );
 
   return (
     <CanvasPane
@@ -170,7 +178,7 @@ export function MaskPane({ width, height, className }: MaskPaneProps) {
       onPointerLeave={handlePointerLeave}
       onKeyDown={handleKeyDown}
     />
-  )
+  );
 }
 
-export default MaskPane
+export default MaskPane;

@@ -1,1 +1,1 @@
-declare module 'imagetracerjs';
+declare module "imagetracerjs";

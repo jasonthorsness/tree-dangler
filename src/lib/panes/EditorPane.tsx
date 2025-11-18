@@ -66,7 +66,10 @@ export function EditorPane({ width, height, className }: EditorPaneProps) {
     id: string;
     timestamp: number;
   } | null>(null);
-  const [labelAnchor, setLabelAnchor] = useState<{ u: number; v: number } | null>(null);
+  const [labelAnchor, setLabelAnchor] = useState<{
+    u: number;
+    v: number;
+  } | null>(null);
 
   const pxLength = mmToPx(connectorLength);
 
