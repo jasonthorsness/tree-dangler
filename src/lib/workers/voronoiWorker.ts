@@ -170,9 +170,7 @@ function runNextComputation() {
 
       const finalMask = new Uint8Array(total);
       for (let i = 0; i < total; i += 1) {
-        if (shrinkMask[i]) {
-          finalMask[i] = 1;
-        } else if (outward.field[i] <= config.growThreshold) {
+        if (outward.field[i] <= config.growThreshold) {
           finalMask[i] = 1;
         }
       }
