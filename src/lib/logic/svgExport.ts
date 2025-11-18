@@ -4,7 +4,7 @@ import type { LineSegment, Polygon } from "../types";
 const MM_TO_PX = 5;
 const HOLE_RADIUS_MM = 1;
 const MIN_POINT_GAP_PX = 0.5;
-const SIMPLIFY_EPSILON_PX = 2;
+const SIMPLIFY_EPSILON_PX = 0;
 
 function pxToMm(px: number) {
   return px / MM_TO_PX;
@@ -88,8 +88,8 @@ function preprocessPoints(points: { x: number; y: number }[]) {
     }
   }
   const smoothed = smoothPoints(deduped);
-  const simplified = simplifyPolyline(smoothed, SIMPLIFY_EPSILON_PX);
-  return simplified.length >= 3 ? simplified : smoothed;
+  // const simplified = simplifyPolyline(smoothed, SIMPLIFY_EPSILON_PX);
+  return smoothed;
 }
 
 // --- replaced manual Catmull–Rom with d3-shape ---
