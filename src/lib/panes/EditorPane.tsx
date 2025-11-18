@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState, type KeyboardEvent } from "react";
+import { useCallback, useMemo, useRef, useState, type KeyboardEvent } from "react";
 
 import { useTreeDanglerState } from "../state/store";
 import { CanvasPane, type PointerEventData } from "../ui/CanvasPane";
@@ -24,7 +24,7 @@ import {
   moveConnectorEndpoint,
   mmToPx,
 } from "../logic/connectors";
-import type { LineSegment, Point } from "../types";
+import type { LineSegment, MaskPolygon, Point } from "../types";
 
 interface DragInfo {
   kind: "mask" | "segment" | "connector";
@@ -43,6 +43,11 @@ export interface EditorPaneProps {
 
 const ENDPOINT_RADIUS = 7.5;
 const CONNECTOR_ENDPOINT_RADIUS = 6;
+type EditorSnapshot = {
+  mask: MaskPolygon;
+  segments: LineSegment[];
+  connectors: LineSegment[];
+};
 
 export function EditorPane({ width, height, className }: EditorPaneProps) {
   const {
@@ -82,6 +87,54 @@ export function EditorPane({ width, height, className }: EditorPaneProps) {
       dispatch({ type: "SET_CONNECTORS", payload: next }),
     [dispatch]
   );
+  const undoStackRef = useRef<EditorSnapshot[]>([]);
+  const redoStackRef = useRef<EditorSnapshot[]>([]);
+
+  const cloneSnapshot = useCallback((): EditorSnapshot => {
+    const clonePoints = (points: Point[]) => points.map((p) => ({ ...p }));
+    const cloneSegments = (items: LineSegment[]) =>
+      items.map((segment) => ({
+        ...segment,
+        start: { ...segment.start },
+        end: { ...segment.end },
+      }));
+
+    return {
+      mask: { ...mask, points: clonePoints(mask.points) },
+      segments: cloneSegments(segments),
+      connectors: cloneSegments(connectors),
+    };
+  }, [mask, segments, connectors]);
+
+  const restoreSnapshot = useCallback(
+    (snapshot: EditorSnapshot) => {
+      dispatch({ type: "SET_MASK", payload: snapshot.mask });
+      dispatch({ type: "SET_SEGMENTS", payload: snapshot.segments });
+      dispatch({ type: "SET_CONNECTORS", payload: snapshot.connectors });
+      setSelectedSegmentId(null);
+      setSelectedConnectorId(null);
+      setMaskSelection(null);
+      setLabelEditor(null);
+      setDragInfo(null);
+    },
+    [dispatch]
+  );
+
+  const handleUndo = useCallback(() => {
+    if (!undoStackRef.current.length) return;
+    const current = cloneSnapshot();
+    const previous = undoStackRef.current.pop()!;
+    redoStackRef.current.push(current);
+    restoreSnapshot(previous);
+  }, [cloneSnapshot, restoreSnapshot]);
+
+  const handleRedo = useCallback(() => {
+    if (!redoStackRef.current.length) return;
+    const current = cloneSnapshot();
+    const next = redoStackRef.current.pop()!;
+    undoStackRef.current.push(current);
+    restoreSnapshot(next);
+  }, [cloneSnapshot, restoreSnapshot]);
 
   const drawPane = useCallback(
     (ctx: CanvasRenderingContext2D) => {
@@ -272,6 +325,10 @@ export function EditorPane({ width, height, className }: EditorPaneProps) {
     (event: PointerEventData) => {
       const point = { x: event.x, y: event.y };
       const isRightClick = event.buttons === 2;
+      redoStackRef.current = [];
+      if (event.buttons === 1) {
+        undoStackRef.current.push(cloneSnapshot());
+      }
 
       // Mask point?
       const maskIdx = hitTestMaskPoint(mask, point, 12);
@@ -409,6 +466,7 @@ export function EditorPane({ width, height, className }: EditorPaneProps) {
       segments,
       setConnectors,
       setSegments,
+      cloneSnapshot,
     ]
   );
 
@@ -512,6 +570,16 @@ export function EditorPane({ width, height, className }: EditorPaneProps) {
 
   const handleKeyDown = useCallback(
     (event: KeyboardEvent<HTMLCanvasElement>) => {
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "z") {
+        event.preventDefault();
+        handleUndo();
+        return;
+      }
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "y") {
+        event.preventDefault();
+        handleRedo();
+        return;
+      }
       if (event.key !== "Delete" && event.key !== "Backspace") return;
       if (maskSelection !== null) {
         event.preventDefault();
@@ -544,6 +612,8 @@ export function EditorPane({ width, height, className }: EditorPaneProps) {
     [
       connectors,
       dispatch,
+      handleRedo,
+      handleUndo,
       mask,
       maskSelection,
       selectedConnectorId,
