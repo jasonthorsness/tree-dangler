@@ -1,9 +1,5 @@
 import { createContext, useContext, useReducer, useEffect, useRef, type Dispatch, type ReactNode } from 'react';
-import { makeNoise2D } from 'open-simplex-noise';
 import { TreeDanglerState, MaskPolygon, LineSegment, Polygon, BinaryBitmap } from '../types';
-import { rasterizeVoronoiMask, computeDistanceField } from '../logic/distanceField';
-import { traceBinaryBitmap } from '../logic/tracing';
-import { generateSVG } from '../logic/svgExport';
 import { mmToPx, resizeConnectorFromStart } from '../logic/connectors';
 
 // Action types
@@ -126,12 +122,10 @@ export function TreeDanglerProvider({ children }: { children: ReactNode }) {
       });
   }, []);
 
-  useVoronoiAutoCompute(state.mask, state.segments, dispatch);
-  useVoronoiRasterize(state.mask, state.voronoiPolygons, dispatch);
-  useDistanceProcessing(
-    state.voronoiRaster,
-    state.connectors,
+  useWorker(
+    state.mask,
     state.segments,
+    state.connectors,
     {
       shrinkThreshold: state.shrinkThreshold,
       growThreshold: state.growThreshold,
@@ -160,10 +154,28 @@ export function useTreeDanglerState() {
 interface VoronoiWorkerMessage {
   id: number;
   polygons?: Polygon[];
+  voronoiRaster?: BinaryBitmap;
+  distanceField?: { data: Float32Array; width: number; height: number; max: number };
+  distancePreview?: BinaryBitmap;
+  piecePolygons?: Polygon[];
+  svgString?: string;
   error?: string;
 }
 
-function useVoronoiAutoCompute(mask: MaskPolygon, segments: LineSegment[], dispatch: Dispatch<Action>) {
+interface DistanceProcessingConfig {
+  shrinkThreshold: number;
+  growThreshold: number;
+  noiseAmplitude: number;
+  noiseSeed: number;
+}
+
+function useWorker(
+  mask: MaskPolygon,
+  segments: LineSegment[],
+  connectors: LineSegment[],
+  config: DistanceProcessingConfig,
+  dispatch: Dispatch<Action>,
+) {
   const workerRef = useRef<Worker | null>(null);
   const requestIdRef = useRef(0);
   const latestCompletedRef = useRef(0);
@@ -173,16 +185,42 @@ function useVoronoiAutoCompute(mask: MaskPolygon, segments: LineSegment[], dispa
     const worker = new Worker(new URL('../workers/voronoiWorker.ts', import.meta.url), { type: 'module' });
     workerRef.current = worker;
     worker.onmessage = (event: MessageEvent<VoronoiWorkerMessage>) => {
-      const { id, polygons, error } = event.data;
+      const {
+        id,
+        polygons,
+        voronoiRaster,
+        distanceField,
+        distancePreview,
+        piecePolygons,
+        svgString,
+        error,
+      } = event.data;
       if (error) {
         console.error('Voronoi worker error:', error);
         return;
       }
-      if (!polygons || id < latestCompletedRef.current) {
+      if (id < latestCompletedRef.current) {
         return;
       }
       latestCompletedRef.current = id;
-      dispatch({ type: 'SET_VORONOI_POLYGONS', payload: polygons });
+      dispatch({ type: 'SET_VORONOI_POLYGONS', payload: polygons ?? [] });
+      dispatch({ type: "SET_VORONOI_RASTER", payload: voronoiRaster });
+      if (distanceField) {
+        dispatch({
+          type: "SET_DISTANCE_FIELD",
+          payload: {
+            data: distanceField.data,
+            width: distanceField.width,
+            height: distanceField.height,
+            max: distanceField.max,
+          },
+        });
+      } else {
+        dispatch({ type: "SET_DISTANCE_FIELD", payload: {} });
+      }
+      dispatch({ type: "SET_DISTANCE_PREVIEW", payload: distancePreview });
+      dispatch({ type: "SET_PIECE_POLYGONS", payload: piecePolygons ?? [] });
+      dispatch({ type: "SET_SVG_STRING", payload: svgString ?? "" });
     };
     return () => {
       workerRef.current = null;
@@ -198,167 +236,16 @@ function useVoronoiAutoCompute(mask: MaskPolygon, segments: LineSegment[], dispa
       id,
       mask,
       segments,
+      connectors,
+      config,
     });
-  }, [mask, segments]);
-}
-
-const DEFAULT_RASTER_WIDTH = 600;
-const DEFAULT_RASTER_HEIGHT = 800;
-
-function useVoronoiRasterize(
-  mask: MaskPolygon,
-  polygons: Polygon[],
-  dispatch: Dispatch<Action>,
-) {
-  useEffect(() => {
-    if (!polygons.length) {
-      dispatch({ type: "SET_VORONOI_RASTER", payload: undefined });
-      dispatch({ type: "SET_DISTANCE_FIELD", payload: {} });
-      dispatch({ type: "SET_DISTANCE_PREVIEW", payload: undefined });
-      return;
-    }
-    const maskBitmap = rasterizeVoronoiMask(polygons, mask, {
-      width: DEFAULT_RASTER_WIDTH,
-      height: DEFAULT_RASTER_HEIGHT,
-      strokeWidth: 2,
-    });
-    if (maskBitmap) {
-      dispatch({ type: "SET_VORONOI_RASTER", payload: maskBitmap });
-    }
-  }, [mask, polygons, dispatch]);
-}
-
-interface DistanceProcessingConfig {
-  shrinkThreshold: number;
-  growThreshold: number;
-  noiseAmplitude: number;
-  noiseSeed: number;
-}
-
-function useDistanceProcessing(
-  raster: BinaryBitmap | undefined,
-  connectors: LineSegment[],
-  segments: LineSegment[],
-  config: DistanceProcessingConfig,
-  dispatch: Dispatch<Action>,
-) {
-  const noise2DRef = useRef<((x: number, y: number) => number) | null>(null);
-  const seedRef = useRef<number | null>(null);
-
-  useEffect(() => {
-    if (seedRef.current !== config.noiseSeed || !noise2DRef.current) {
-      noise2DRef.current = makeNoise2D(config.noiseSeed);
-      seedRef.current = config.noiseSeed;
-    }
-
-    if (!raster) {
-      dispatch({ type: "SET_DISTANCE_FIELD", payload: {} });
-      dispatch({ type: "SET_DISTANCE_PREVIEW", payload: undefined });
-      dispatch({ type: "SET_PIECE_POLYGONS", payload: [] });
-      dispatch({ type: "SET_SVG_STRING", payload: "" });
-      return;
-    }
-
-    const { width, height } = raster;
-    const total = width * height;
-
-    const inward = computeDistanceField(raster);
-    dispatch({
-      type: "SET_DISTANCE_FIELD",
-      payload: {
-        data: inward.field,
-        width,
-        height,
-        max: inward.maxDistance,
-      },
-    });
-
-    const shrinkMask = new Uint8Array(total);
-    for (let i = 0; i < total; i += 1) {
-      shrinkMask[i] = inward.field[i] >= config.shrinkThreshold ? 1 : 0;
-    }
-
-    const invertedData = new Uint8ClampedArray(total * 4);
-    for (let i = 0; i < total; i += 1) {
-      const value = shrinkMask[i] ? 0 : 255;
-      const offset = i * 4;
-      invertedData[offset] = value;
-      invertedData[offset + 1] = value;
-      invertedData[offset + 2] = value;
-      invertedData[offset + 3] = 255;
-    }
-
-    const outward = computeDistanceField({
-      width,
-      height,
-      data: invertedData,
-    });
-
-    if (config.noiseAmplitude > 0 && noise2DRef.current) {
-      for (let i = 0; i < outward.field.length; i += 1) {
-        const x = i % width;
-        const y = Math.floor(i / width);
-        const baseNoise = noise2DRef.current(x * 0.01, y * 0.01);
-        const secondNoise = noise2DRef.current(x * 0.02 + 100, y * 0.02 + 100);
-        const thirdNoise = noise2DRef.current(x * 0.03 + 200, y * 0.03 + 200);
-        const combinedNoise = (baseNoise + secondNoise * 0.5 + thirdNoise * 0.25) / 1.75;
-        outward.field[i] = Math.max(
-          0,
-          outward.field[i] + combinedNoise * config.noiseAmplitude
-        );
-      }
-    }
-
-    const finalMask = new Uint8Array(total);
-    for (let i = 0; i < total; i += 1) {
-      if (shrinkMask[i]) {
-        finalMask[i] = 1;
-      } else if (outward.field[i] <= config.growThreshold) {
-        finalMask[i] = 1;
-      }
-    }
-
-    const previewData = new Uint8ClampedArray(total * 4);
-    for (let i = 0; i < total; i += 1) {
-      const offset = i * 4;
-      if (finalMask[i]) {
-        previewData[offset] = 255;
-        previewData[offset + 1] = 255;
-        previewData[offset + 2] = 255;
-        previewData[offset + 3] = 255;
-      } else {
-        previewData[offset] = 0;
-        previewData[offset + 1] = 0;
-        previewData[offset + 2] = 0;
-        // Use transparent background so tracing focuses on the foreground only.
-        previewData[offset + 3] = 0;
-      }
-    }
-    dispatch({
-      type: "SET_DISTANCE_PREVIEW",
-      payload: {
-        width,
-        height,
-        data: previewData,
-      },
-    });
-
-    const tracedPolygons = traceBinaryBitmap({
-      width,
-      height,
-      data: previewData,
-    });
-    dispatch({ type: "SET_PIECE_POLYGONS", payload: tracedPolygons });
-    const svgOutput = generateSVG(tracedPolygons, connectors, segments, width, height);
-    dispatch({ type: "SET_SVG_STRING", payload: svgOutput });
   }, [
-    raster,
-    connectors,
+    mask,
     segments,
+    connectors,
     config.shrinkThreshold,
     config.growThreshold,
     config.noiseAmplitude,
     config.noiseSeed,
-    dispatch,
   ]);
 }

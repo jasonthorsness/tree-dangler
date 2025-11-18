@@ -10,8 +10,6 @@ const TRACE_OPTIONS = {
   colorsampling: 0,
   numberofcolors: 2,
   mincolorratio: 0,
-  blurradius: 5,
-  blurdelta: 64,
   linefilter: true,
 };
 
