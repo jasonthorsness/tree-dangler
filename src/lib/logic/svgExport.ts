@@ -4,54 +4,9 @@ import type { LineSegment, Polygon } from "../types";
 const MM_TO_PX = 5;
 const HOLE_RADIUS_MM = 1;
 const MIN_POINT_GAP_PX = 0.5;
-const SIMPLIFY_EPSILON_PX = 0;
 
 function pxToMm(px: number) {
   return px / MM_TO_PX;
-}
-
-function distanceToSegment(
-  p: { x: number; y: number },
-  a: { x: number; y: number },
-  b: { x: number; y: number }
-) {
-  const dx = b.x - a.x;
-  const dy = b.y - a.y;
-  const l2 = dx * dx + dy * dy;
-  if (l2 === 0) return Math.hypot(p.x - a.x, p.y - a.y);
-  let t = ((p.x - a.x) * dx + (p.y - a.y) * dy) / l2;
-  t = Math.max(0, Math.min(1, t));
-  const projX = a.x + t * dx;
-  const projY = a.y + t * dy;
-  return Math.hypot(p.x - projX, p.y - projY);
-}
-
-function simplifyPolyline(points: { x: number; y: number }[], epsilon: number) {
-  if (points.length <= 3) return points;
-
-  const keep = new Array(points.length).fill(false);
-  keep[0] = true;
-  keep[points.length - 1] = true;
-
-  const stack: Array<[number, number]> = [[0, points.length - 1]];
-  while (stack.length) {
-    const [start, end] = stack.pop()!;
-    let maxDist = 0;
-    let index = -1;
-    for (let i = start + 1; i < end; i += 1) {
-      const d = distanceToSegment(points[i], points[start], points[end]);
-      if (d > maxDist) {
-        maxDist = d;
-        index = i;
-      }
-    }
-    if (maxDist > epsilon && index !== -1) {
-      keep[index] = true;
-      stack.push([start, index], [index, end]);
-    }
-  }
-
-  return points.filter((_, i) => keep[i]);
 }
 
 function smoothPoints(points: { x: number; y: number }[]) {

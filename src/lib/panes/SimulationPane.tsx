@@ -28,6 +28,7 @@ export function SimulationPane({
   const engineRef = useRef<Matter.Engine | null>(null);
   const attachmentsRef = useRef<Record<string, Matter.Body | null>>({});
   const runningRef = useRef<number | undefined>(undefined);
+  const pausedRef = useRef(false);
   const [hasError, setHasError] = useState(false);
   const dragRef = useRef<{ segmentIndex: number; endpoint: "start" | "end" } | null>(
     null
@@ -80,6 +81,51 @@ export function SimulationPane({
   }, [onResetRequest]);
 
   useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const isInsideCanvas = (event: PointerEvent) => {
+      const rect = canvas.getBoundingClientRect();
+      return (
+        event.clientX >= rect.left &&
+        event.clientX <= rect.right &&
+        event.clientY >= rect.top &&
+        event.clientY <= rect.bottom
+      );
+    };
+
+    const updatePaused = (event: PointerEvent) => {
+      const leftButtonDown = (event.buttons & 1) === 1;
+      pausedRef.current = leftButtonDown && !isInsideCanvas(event);
+    };
+
+    const handlePointerMoveGlobal = (event: PointerEvent) => {
+      updatePaused(event);
+    };
+    const handlePointerDownGlobal = (event: PointerEvent) => {
+      updatePaused(event);
+    };
+    const handlePointerUpGlobal = () => {
+      pausedRef.current = false;
+    };
+    const handleBlur = () => {
+      pausedRef.current = false;
+    };
+
+    window.addEventListener("pointermove", handlePointerMoveGlobal);
+    window.addEventListener("pointerdown", handlePointerDownGlobal);
+    window.addEventListener("pointerup", handlePointerUpGlobal);
+    window.addEventListener("blur", handleBlur);
+
+    return () => {
+      window.removeEventListener("pointermove", handlePointerMoveGlobal);
+      window.removeEventListener("pointerdown", handlePointerDownGlobal);
+      window.removeEventListener("pointerup", handlePointerUpGlobal);
+      window.removeEventListener("blur", handleBlur);
+    };
+  }, []);
+
+  useEffect(() => {
     setHasError(false);
     if (!canvasRef.current) return;
     try {
@@ -116,7 +162,9 @@ export function SimulationPane({
       const engine = engineRef.current;
       if (engine && !hasError) {
         try {
-          Matter.Engine.update(engine, 1000 / 60);
+          if (!pausedRef.current) {
+            Matter.Engine.update(engine, 1000 / 60);
+          }
           ctx.strokeStyle = "#FFFFFF";
           ctx.lineWidth = 1.5;
           const bodies = Matter.Composite.allBodies(engine.world);

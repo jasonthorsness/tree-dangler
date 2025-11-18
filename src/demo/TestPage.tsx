@@ -21,7 +21,7 @@ function EditorCard() {
     setResetToken((token) => token + 1);
   }, []);
 
-  const handleSave = useCallback(() => {
+  const handleSave = useCallback(async () => {
     const payload = {
       mask: state.mask,
       segments: state.segments,
@@ -34,23 +34,63 @@ function EditorCard() {
         connectorLength: state.connectorLength,
       },
     };
+
     const blob = new Blob([JSON.stringify(payload, null, 2)], {
       type: "application/json",
     });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = "tree-dangler-scene.json";
-    link.click();
-    URL.revokeObjectURL(url);
+
+    try {
+      const handle = await window.showSaveFilePicker({
+        suggestedName: "tree-dangler-scene.json",
+        types: [
+          {
+            description: "JSON file",
+            accept: { "application/json": [".json"] },
+          },
+        ],
+      });
+
+      const writable = await handle.createWritable();
+      await writable.write(blob);
+      await writable.close();
+    } catch (err) {
+      // user cancelled — safe to ignore
+      console.log(err);
+    }
   }, [state]);
 
   const handleLoad = useCallback(() => {
     fileInputRef.current?.click();
   }, []);
 
-  const handleDownloadSvg = useCallback(() => {
+  const handleDownloadSvg = useCallback(async () => {
     if (!state.svgString) return;
+
+    try {
+      // Modern browsers: use native Save dialog
+      if ((window as any).showSaveFilePicker) {
+        const handle = await (window as any).showSaveFilePicker({
+          suggestedName: "tree-dangler.svg",
+          types: [
+            {
+              description: "SVG Image",
+              accept: { "image/svg+xml": [".svg"] },
+            },
+          ],
+        });
+
+        const writable = await handle.createWritable();
+        await writable.write(
+          new Blob([state.svgString], { type: "image/svg+xml" })
+        );
+        await writable.close();
+        return;
+      }
+    } catch (err) {
+      console.error("Save dialog failed, falling back", err);
+    }
+
+    // Fallback: force download
     const blob = new Blob([state.svgString], { type: "image/svg+xml" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
@@ -191,14 +231,14 @@ function EditorCard() {
                 onClick={handleSave}
                 className="rounded-full border border-slate-600 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-100 transition hover:border-slate-400"
               >
-                Save Scene
+                Save
               </button>
               <button
                 type="button"
                 onClick={handleLoad}
                 className="rounded-full border border-slate-600 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-100 transition hover:border-slate-400"
               >
-                Load Scene
+                Load
               </button>
               <input
                 ref={fileInputRef}
@@ -230,18 +270,11 @@ function EditorCard() {
               </button>
               <button
                 type="button"
-                onClick={handleReset}
-                className="rounded-full border border-purple-400/50 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-purple-100 transition hover:border-purple-300"
-              >
-                Reset Simulation
-              </button>
-              <button
-                type="button"
                 onClick={handleDownloadSvg}
                 className="rounded-full border border-emerald-400/40 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-emerald-100 transition hover:border-emerald-300"
                 disabled={!state.svgString}
               >
-                Download SVG
+                Export SVG
               </button>
             </div>
             <DistanceFieldPane
