@@ -1,4 +1,10 @@
-import { useCallback, useMemo, useRef, useState, type KeyboardEvent } from "react";
+import {
+  useCallback,
+  useMemo,
+  useRef,
+  useState,
+  type KeyboardEvent,
+} from "react";
 
 import { useTreeDanglerState } from "../state/store";
 import { CanvasPane, type PointerEventData } from "../ui/CanvasPane";
@@ -24,7 +30,12 @@ import {
   moveConnectorEndpoint,
   mmToPx,
 } from "../logic/connectors";
-import type { LineSegment, MaskPolygon, Point, TreeDanglerState } from "../types";
+import type {
+  LineSegment,
+  MaskPolygon,
+  Point,
+  TreeDanglerState,
+} from "../types";
 
 interface DragInfo {
   kind: "mask" | "segment" | "connector";
@@ -57,8 +68,8 @@ export function EditorPane({ width, height, className }: EditorPaneProps) {
       connectors,
       piecePolygons,
       connectorLength,
-      shrinkThreshold,
-      growThreshold,
+      gap,
+      round,
       noiseAmplitude,
       noiseSeed,
     },
@@ -101,10 +112,7 @@ export function EditorPane({ width, height, className }: EditorPaneProps) {
   const updateDistanceConfig = useCallback(
     (
       patch: Partial<
-        Pick<
-          TreeDanglerState,
-          "shrinkThreshold" | "growThreshold" | "noiseAmplitude" | "noiseSeed"
-        >
+        Pick<TreeDanglerState, "gap" | "round" | "noiseAmplitude" | "noiseSeed">
       >
     ) => {
       dispatch({ type: "SET_DISTANCE_CONFIG", payload: patch });
@@ -703,8 +711,10 @@ export function EditorPane({ width, height, className }: EditorPaneProps) {
           className="pointer-events-auto inline-flex items-center gap-2 rounded-full border border-white/10 bg-slate-900/80 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.3em] text-slate-100 shadow-lg backdrop-blur transition hover:border-white/30"
           onClick={() => setPanelOpen((prev) => !prev)}
         >
-          {panelOpen ? "Hide" : "Show"} Noise
-          <span className="text-lg leading-none">{panelOpen ? "-" : "+"}</span>
+          Settings
+          <span className="text-lg leading-none font-mono">
+            {panelOpen ? "-" : "+"}
+          </span>
         </button>
         {panelOpen ? (
           <div className="pointer-events-auto w-64 rounded-2xl border border-white/10 bg-slate-950/80 p-4 text-xs text-slate-200 shadow-2xl backdrop-blur">
@@ -714,18 +724,18 @@ export function EditorPane({ width, height, className }: EditorPaneProps) {
             <div className="mt-3 space-y-3">
               <label className="flex flex-col gap-1">
                 <span className="flex items-center justify-between text-[11px] uppercase tracking-[0.3em] text-slate-400">
-                  Shrink
-                  <span>{shrinkThreshold.toFixed(1)} px</span>
+                  Gap
+                  <span>{gap.toFixed(1)} mm</span>
                 </span>
                 <input
                   type="range"
-                  min={0}
-                  max={40}
-                  step={0.5}
-                  value={shrinkThreshold}
+                  min={1}
+                  max={10}
+                  step={0.1}
+                  value={gap}
                   onChange={(event) =>
                     updateDistanceConfig({
-                      shrinkThreshold: Number(event.target.value),
+                      gap: Number(event.target.value),
                     })
                   }
                   className="w-full accent-sky-300"
@@ -733,18 +743,18 @@ export function EditorPane({ width, height, className }: EditorPaneProps) {
               </label>
               <label className="flex flex-col gap-1">
                 <span className="flex items-center justify-between text-[11px] uppercase tracking-[0.3em] text-slate-400">
-                  Grow
-                  <span>{growThreshold.toFixed(1)} px</span>
+                  Round
+                  <span>{round.toFixed(1)} mm</span>
                 </span>
                 <input
                   type="range"
-                  min={0}
-                  max={40}
-                  step={0.5}
-                  value={growThreshold}
+                  min={1}
+                  max={10}
+                  step={0.1}
+                  value={round}
                   onChange={(event) =>
                     updateDistanceConfig({
-                      growThreshold: Number(event.target.value),
+                      round: Number(event.target.value),
                     })
                   }
                   className="w-full accent-amber-300"
@@ -758,8 +768,8 @@ export function EditorPane({ width, height, className }: EditorPaneProps) {
                 <input
                   type="range"
                   min={0}
-                  max={50}
-                  step={0.5}
+                  max={40}
+                  step={0.1}
                   value={noiseAmplitude}
                   onChange={(event) =>
                     updateDistanceConfig({

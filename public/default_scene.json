@@ -834,8 +834,8 @@
     }
   ],
   "noise": {
-    "shrinkThreshold": 20.5,
-    "growThreshold": 13,
+    "gap": 1.5,
+    "round": 2.6,
     "noiseAmplitude": 5,
     "noiseSeed": 0,
     "connectorLength": 8

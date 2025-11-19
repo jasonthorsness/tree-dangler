@@ -1,21 +1,51 @@
-import { createContext, useContext, useReducer, useEffect, useRef, type Dispatch, type ReactNode } from 'react';
-import { TreeDanglerState, MaskPolygon, LineSegment, Polygon, BinaryBitmap } from '../types';
-import { mmToPx, resizeConnectorFromStart } from '../logic/connectors';
+import {
+  createContext,
+  useContext,
+  useReducer,
+  useEffect,
+  useRef,
+  type Dispatch,
+  type ReactNode,
+} from "react";
+import {
+  TreeDanglerState,
+  MaskPolygon,
+  LineSegment,
+  Polygon,
+  BinaryBitmap,
+} from "../types";
+import { mmToPx, pxToMm, resizeConnectorFromStart } from "../logic/connectors";
 
 // Action types
 type Action =
-  | { type: 'SET_MASK'; payload: MaskPolygon }
-  | { type: 'SET_SEGMENTS'; payload: TreeDanglerState['segments'] }
-  | { type: 'SET_VORONOI_POLYGONS'; payload: TreeDanglerState['voronoiPolygons'] }
-  | { type: 'SET_VORONOI_RASTER'; payload: BinaryBitmap | undefined }
-  | { type: 'SET_DISTANCE_FIELD'; payload: { data?: Float32Array; width?: number; height?: number; max?: number } }
-  | { type: 'SET_DISTANCE_PREVIEW'; payload: BinaryBitmap | undefined }
-  | { type: 'SET_THRESHOLD_BITMAP'; payload: Uint8ClampedArray }
-  | { type: 'SET_PIECE_POLYGONS'; payload: TreeDanglerState['piecePolygons'] }
-  | { type: 'SET_CONNECTORS'; payload: TreeDanglerState['connectors'] }
-  | { type: 'SET_DISTANCE_CONFIG'; payload: Partial<Pick<TreeDanglerState, 'shrinkThreshold' | 'growThreshold' | 'noiseAmplitude' | 'noiseSeed'>> }
-  | { type: 'SET_CONNECTOR_LENGTH'; payload: number }
-  | { type: 'SET_SVG_STRING'; payload: string };
+  | { type: "SET_MASK"; payload: MaskPolygon }
+  | { type: "SET_SEGMENTS"; payload: TreeDanglerState["segments"] }
+  | {
+      type: "SET_VORONOI_POLYGONS";
+      payload: TreeDanglerState["voronoiPolygons"];
+    }
+  | { type: "SET_VORONOI_RASTER"; payload: BinaryBitmap | undefined }
+  | {
+      type: "SET_DISTANCE_FIELD";
+      payload: {
+        data?: Float32Array;
+        width?: number;
+        height?: number;
+        max?: number;
+      };
+    }
+  | { type: "SET_DISTANCE_PREVIEW"; payload: BinaryBitmap | undefined }
+  | { type: "SET_THRESHOLD_BITMAP"; payload: Uint8ClampedArray }
+  | { type: "SET_PIECE_POLYGONS"; payload: TreeDanglerState["piecePolygons"] }
+  | { type: "SET_CONNECTORS"; payload: TreeDanglerState["connectors"] }
+  | {
+      type: "SET_DISTANCE_CONFIG";
+      payload: Partial<
+        Pick<TreeDanglerState, "gap" | "round" | "noiseAmplitude" | "noiseSeed">
+      >;
+    }
+  | { type: "SET_CONNECTOR_LENGTH"; payload: number }
+  | { type: "SET_SVG_STRING"; payload: string };
 
 // Initial state; populated from default_scene.json on mount
 const initialState: TreeDanglerState = {
@@ -25,8 +55,8 @@ const initialState: TreeDanglerState = {
   voronoiRaster: undefined,
   piecePolygons: [],
   connectors: [],
-  shrinkThreshold: 16,
-  growThreshold: 10,
+  gap: 1.2,
+  round: 2,
   noiseAmplitude: 5,
   noiseSeed: 0,
   connectorLength: 8,
@@ -37,41 +67,52 @@ const initialState: TreeDanglerState = {
 // Reducer
 function reducer(state: TreeDanglerState, action: Action): TreeDanglerState {
   switch (action.type) {
-    case 'SET_MASK':
+    case "SET_MASK":
       return { ...state, mask: action.payload };
-    case 'SET_SEGMENTS':
+    case "SET_SEGMENTS":
       return { ...state, segments: action.payload };
-    case 'SET_VORONOI_POLYGONS':
+    case "SET_VORONOI_POLYGONS":
       return { ...state, voronoiPolygons: action.payload };
-    case 'SET_VORONOI_RASTER':
+    case "SET_VORONOI_RASTER":
       return { ...state, voronoiRaster: action.payload };
-    case 'SET_DISTANCE_FIELD':
+    case "SET_DISTANCE_FIELD":
       return {
         ...state,
         distanceField: action.payload.data,
         distanceFieldDimensions: action.payload.data
-          ? { width: action.payload.width ?? state.distanceFieldDimensions?.width ?? 0, height: action.payload.height ?? state.distanceFieldDimensions?.height ?? 0 }
+          ? {
+              width:
+                action.payload.width ??
+                state.distanceFieldDimensions?.width ??
+                0,
+              height:
+                action.payload.height ??
+                state.distanceFieldDimensions?.height ??
+                0,
+            }
           : undefined,
-        distanceFieldMax: action.payload.data ? action.payload.max ?? state.distanceFieldMax : undefined,
+        distanceFieldMax: action.payload.data
+          ? action.payload.max ?? state.distanceFieldMax
+          : undefined,
       };
-    case 'SET_THRESHOLD_BITMAP':
+    case "SET_THRESHOLD_BITMAP":
       return { ...state, thresholdBitmap: action.payload };
-    case 'SET_PIECE_POLYGONS':
+    case "SET_PIECE_POLYGONS":
       return { ...state, piecePolygons: action.payload };
-    case 'SET_CONNECTORS':
+    case "SET_CONNECTORS":
       return { ...state, connectors: action.payload };
-    case 'SET_DISTANCE_CONFIG':
+    case "SET_DISTANCE_CONFIG":
       return { ...state, ...action.payload };
-    case 'SET_DISTANCE_PREVIEW':
+    case "SET_DISTANCE_PREVIEW":
       return { ...state, distancePreview: action.payload };
-    case 'SET_SVG_STRING':
+    case "SET_SVG_STRING":
       return { ...state, svgString: action.payload };
-    case 'SET_CONNECTOR_LENGTH':
+    case "SET_CONNECTOR_LENGTH":
       return {
         ...state,
         connectorLength: action.payload,
         connectors: state.connectors.map((segment) =>
-          resizeConnectorFromStart(segment, mmToPx(action.payload), state.mask),
+          resizeConnectorFromStart(segment, mmToPx(action.payload), state.mask)
         ),
       };
     default:
@@ -85,7 +126,9 @@ type TreeDanglerContextValue = {
   dispatch: Dispatch<Action>;
 };
 
-const TreeDanglerContext = createContext<TreeDanglerContextValue | undefined>(undefined);
+const TreeDanglerContext = createContext<TreeDanglerContextValue | undefined>(
+  undefined
+);
 
 // Provider component
 export function TreeDanglerProvider({ children }: { children: ReactNode }) {
@@ -106,14 +149,62 @@ export function TreeDanglerProvider({ children }: { children: ReactNode }) {
           dispatch({ type: "SET_CONNECTORS", payload: data.connectors });
         }
         if (data.noise) {
-          const { shrinkThreshold, growThreshold, noiseAmplitude, noiseSeed, connectorLength } =
-            data.noise;
-          dispatch({
-            type: "SET_DISTANCE_CONFIG",
-            payload: { shrinkThreshold, growThreshold, noiseAmplitude, noiseSeed },
-          });
+          const {
+            shrinkThreshold,
+            growThreshold,
+            round,
+            gap,
+            noiseAmplitude,
+            noiseSeed,
+            connectorLength,
+          } = data.noise;
+          const configPatch: Partial<
+            Pick<
+              TreeDanglerState,
+              "gap" | "round" | "noiseAmplitude" | "noiseSeed"
+            >
+          > = {};
+
+          let roundMm: number | undefined;
+          if (typeof round === "number") {
+            roundMm = round;
+          } else if (typeof growThreshold === "number") {
+            roundMm = pxToMm(growThreshold);
+          }
+
+          let gapMm: number | undefined;
+          if (typeof gap === "number") {
+            gapMm = typeof round === "number" ? gap : pxToMm(gap);
+          } else if (
+            typeof shrinkThreshold === "number" &&
+            roundMm !== undefined
+          ) {
+            gapMm = pxToMm(shrinkThreshold) - roundMm;
+          }
+
+          if (roundMm !== undefined) {
+            configPatch.round = Math.max(0, roundMm);
+          }
+          if (gapMm !== undefined) {
+            configPatch.gap = Math.max(0, gapMm);
+          }
+          if (typeof noiseAmplitude === "number") {
+            configPatch.noiseAmplitude = noiseAmplitude;
+          }
+          if (typeof noiseSeed === "number") {
+            configPatch.noiseSeed = noiseSeed;
+          }
+          if (Object.keys(configPatch).length > 0) {
+            dispatch({
+              type: "SET_DISTANCE_CONFIG",
+              payload: configPatch,
+            });
+          }
           if (typeof connectorLength === "number") {
-            dispatch({ type: "SET_CONNECTOR_LENGTH", payload: connectorLength });
+            dispatch({
+              type: "SET_CONNECTOR_LENGTH",
+              payload: connectorLength,
+            });
           }
         }
       })
@@ -122,17 +213,19 @@ export function TreeDanglerProvider({ children }: { children: ReactNode }) {
       });
   }, []);
 
+  const gapPx = mmToPx(state.gap);
+  const roundPx = mmToPx(state.round);
   useWorker(
     state.mask,
     state.segments,
     state.connectors,
     {
-      shrinkThreshold: state.shrinkThreshold,
-      growThreshold: state.growThreshold,
+      shrinkThreshold: roundPx + gapPx / 2,
+      roundThreshold: roundPx,
       noiseAmplitude: state.noiseAmplitude,
       noiseSeed: state.noiseSeed,
     },
-    dispatch,
+    dispatch
   );
 
   return (
@@ -146,7 +239,9 @@ export function TreeDanglerProvider({ children }: { children: ReactNode }) {
 export function useTreeDanglerState() {
   const context = useContext(TreeDanglerContext);
   if (!context) {
-    throw new Error('useTreeDanglerState must be used within a TreeDanglerProvider');
+    throw new Error(
+      "useTreeDanglerState must be used within a TreeDanglerProvider"
+    );
   }
   return context;
 }
@@ -155,7 +250,12 @@ interface VoronoiWorkerMessage {
   id: number;
   polygons?: Polygon[];
   voronoiRaster?: BinaryBitmap;
-  distanceField?: { data: Float32Array; width: number; height: number; max: number };
+  distanceField?: {
+    data: Float32Array;
+    width: number;
+    height: number;
+    max: number;
+  };
   distancePreview?: BinaryBitmap;
   piecePolygons?: Polygon[];
   svgString?: string;
@@ -164,7 +264,7 @@ interface VoronoiWorkerMessage {
 
 interface DistanceProcessingConfig {
   shrinkThreshold: number;
-  growThreshold: number;
+  roundThreshold: number;
   noiseAmplitude: number;
   noiseSeed: number;
 }
@@ -174,15 +274,18 @@ function useWorker(
   segments: LineSegment[],
   connectors: LineSegment[],
   config: DistanceProcessingConfig,
-  dispatch: Dispatch<Action>,
+  dispatch: Dispatch<Action>
 ) {
   const workerRef = useRef<Worker | null>(null);
   const requestIdRef = useRef(0);
   const latestCompletedRef = useRef(0);
 
   useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const worker = new Worker(new URL('../workers/voronoiWorker.ts', import.meta.url), { type: 'module' });
+    if (typeof window === "undefined") return;
+    const worker = new Worker(
+      new URL("../workers/voronoiWorker.ts", import.meta.url),
+      { type: "module" }
+    );
     workerRef.current = worker;
     worker.onmessage = (event: MessageEvent<VoronoiWorkerMessage>) => {
       const {
@@ -196,14 +299,14 @@ function useWorker(
         error,
       } = event.data;
       if (error) {
-        console.error('Voronoi worker error:', error);
+        console.error("Voronoi worker error:", error);
         return;
       }
       if (id < latestCompletedRef.current) {
         return;
       }
       latestCompletedRef.current = id;
-      dispatch({ type: 'SET_VORONOI_POLYGONS', payload: polygons ?? [] });
+      dispatch({ type: "SET_VORONOI_POLYGONS", payload: polygons ?? [] });
       dispatch({ type: "SET_VORONOI_RASTER", payload: voronoiRaster });
       if (distanceField) {
         dispatch({
@@ -244,7 +347,7 @@ function useWorker(
     segments,
     connectors,
     config.shrinkThreshold,
-    config.growThreshold,
+    config.roundThreshold,
     config.noiseAmplitude,
     config.noiseSeed,
   ]);

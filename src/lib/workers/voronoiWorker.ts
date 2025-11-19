@@ -22,7 +22,7 @@ interface WorkerRequest {
   connectors: LineSegment[];
   config: {
     shrinkThreshold: number;
-    growThreshold: number;
+    roundThreshold: number;
     noiseAmplitude: number;
     noiseSeed: number;
   };
@@ -170,7 +170,7 @@ function runNextComputation() {
 
       const finalMask = new Uint8Array(total);
       for (let i = 0; i < total; i += 1) {
-        if (outward.field[i] <= config.growThreshold) {
+        if (outward.field[i] <= config.roundThreshold) {
           finalMask[i] = 1;
         }
       }

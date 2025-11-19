@@ -42,8 +42,8 @@ export interface TreeDanglerState {
   piecePolygons: Polygon[];
   connectors: LineSegment[];
   // UI-level config
-  shrinkThreshold: number;
-  growThreshold: number;
+  gap: number;
+  round: number;
   noiseAmplitude: number;
   noiseSeed: number;
   connectorLength: number;

@@ -11,6 +11,10 @@ export function mmToPx(mm: number) {
   return mm * PX_PER_MM;
 }
 
+export function pxToMm(px: number) {
+  return px / PX_PER_MM;
+}
+
 export function createConnectorAtPoint(
   _mask: MaskPolygon,
   click: Point,

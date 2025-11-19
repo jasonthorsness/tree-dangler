@@ -18,7 +18,7 @@ export function DistanceFieldPane({
   showPreview = true,
 }: DistanceFieldPaneProps) {
   const {
-    state: { shrinkThreshold, growThreshold, noiseAmplitude, noiseSeed },
+    state: { gap, round, noiseAmplitude, noiseSeed },
     dispatch,
   } = useTreeDanglerState();
 
@@ -27,7 +27,7 @@ export function DistanceFieldPane({
       patch: Partial<
         Pick<
           TreeDanglerState,
-          "shrinkThreshold" | "growThreshold" | "noiseAmplitude" | "noiseSeed"
+          "gap" | "round" | "noiseAmplitude" | "noiseSeed"
         >
       >
     ) => {
@@ -48,31 +48,31 @@ export function DistanceFieldPane({
       <div className="mt-4 space-y-3 text-sm text-slate-300">
         <div className="flex flex-col gap-1">
           <label className="flex items-center justify-between text-xs uppercase tracking-widest text-slate-400">
-            Shrink Threshold <span>{shrinkThreshold.toFixed(1)} px</span>
+            Gap <span>{gap.toFixed(1)} mm</span>
           </label>
           <input
             type="range"
             min={0}
-            max={40}
-            step={0.5}
-            value={shrinkThreshold}
+            max={8}
+            step={0.1}
+            value={gap}
             onChange={(event) =>
-              updateConfig({ shrinkThreshold: Number(event.target.value) })
+              updateConfig({ gap: Number(event.target.value) })
             }
           />
         </div>
         <div className="flex flex-col gap-1">
           <label className="flex items-center justify-between text-xs uppercase tracking-widest text-slate-400">
-            Grow Threshold <span>{growThreshold.toFixed(1)} px</span>
+            Round <span>{round.toFixed(1)} mm</span>
           </label>
           <input
             type="range"
             min={0}
-            max={40}
-            step={0.5}
-            value={growThreshold}
+            max={8}
+            step={0.1}
+            value={round}
             onChange={(event) =>
-              updateConfig({ growThreshold: Number(event.target.value) })
+              updateConfig({ round: Number(event.target.value) })
             }
           />
         </div>
