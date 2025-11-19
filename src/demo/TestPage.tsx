@@ -12,6 +12,9 @@ function EditorCard() {
   const height = 800;
   const { state, dispatch } = useTreeDanglerState();
   const [resetToken, setResetToken] = useState(0);
+  const [previewMode, setPreviewMode] = useState<"simulation" | "svg">(
+    "simulation"
+  );
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
@@ -189,7 +192,7 @@ function EditorCard() {
 
   return (
     <div className="p-4">
-      <div className="mx-auto w-full max-w-[1800px]">
+      <div className="mx-auto w-full max-w-[1200px]">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:gap-6">
           <div className="flex flex-col gap-1">
             <p className="text-xs font-semibold uppercase tracking-[0.4em]">
@@ -253,7 +256,7 @@ function EditorCard() {
             </button>
           </div>
         </div>
-        <div className="mt-4 grid gap-2 grid-cols-3">
+        <div className="mt-4 grid gap-2 grid-cols-2">
           <div className="flex flex-col gap-4">
             <div className="flex justify-center">
               <EditorPane
@@ -266,22 +269,52 @@ function EditorCard() {
 
           <div className="flex flex-col gap-4">
             <div className="flex justify-center">
-              <SimulationPane
-                width={width}
-                height={height}
-                resetToken={resetToken}
-                onResetRequest={handleReset}
-                className="rounded-2xl border border-slate-800 w-full max-w-[600px] aspect-[3/4]"
-              />
-            </div>
-          </div>
-
-          <div className="flex flex-col gap-4">
-            <div className="w-full max-w-[600px]">
-              <SvgExportPane
-                className="rounded-2xl border border-slate-800 p-4 w-full"
-                showDownload={false}
-              />
+              <div className="relative w-full max-w-[600px]">
+                <div className="pointer-events-none absolute left-4 top-4 z-10">
+                  <div className="pointer-events-auto inline-flex items-center gap-1 rounded-full border border-white/10 bg-slate-900/80 p-1 text-[11px] font-semibold uppercase tracking-[0.3em] text-slate-100 shadow-lg backdrop-blur">
+                    <button
+                      type="button"
+                      onClick={() => setPreviewMode("simulation")}
+                      className={`rounded-full px-3 py-1 transition ${
+                        previewMode === "simulation"
+                          ? "bg-white text-slate-900"
+                          : "text-slate-400 hover:text-slate-100"
+                      }`}
+                      aria-pressed={previewMode === "simulation"}
+                    >
+                      Sim
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPreviewMode("svg")}
+                      className={`rounded-full px-3 py-1 transition ${
+                        previewMode === "svg"
+                          ? "bg-white text-slate-900"
+                          : "text-slate-400 hover:text-slate-100"
+                      }`}
+                      aria-pressed={previewMode === "svg"}
+                    >
+                      SVG
+                    </button>
+                  </div>
+                </div>
+                {previewMode === "simulation" ? (
+                  <SimulationPane
+                    width={width}
+                    height={height}
+                    resetToken={resetToken}
+                    onResetRequest={handleReset}
+                    className="rounded-2xl border border-slate-800 w-full aspect-[3/4]"
+                  />
+                ) : (
+                  <div className="rounded-2xl border border-slate-800 w-full aspect-[3/4] bg-slate-950">
+                    <SvgExportPane
+                      className="h-full w-full overflow-auto p-4"
+                      showDownload={false}
+                    />
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
