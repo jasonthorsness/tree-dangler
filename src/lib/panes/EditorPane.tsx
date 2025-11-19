@@ -89,6 +89,7 @@ export function EditorPane({ width, height, className }: EditorPaneProps) {
     value: string;
   } | null>(null);
   const [panelOpen, setPanelOpen] = useState(true);
+  const [helpOpen, setHelpOpen] = useState(false);
   const [lastClick, setLastClick] = useState<{
     id: string;
     timestamp: number;
@@ -818,6 +819,42 @@ export function EditorPane({ width, height, className }: EditorPaneProps) {
                 </div>
               </label>
             </div>
+          </div>
+        ) : null}
+        <button
+          type="button"
+          className="pointer-events-auto inline-flex items-center gap-2 rounded-full border border-white/10 bg-slate-900/80 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.3em] text-slate-100 shadow-lg backdrop-blur transition hover:border-white/30"
+          onClick={() => setHelpOpen((prev) => !prev)}
+        >
+          Help
+          <span className="text-lg leading-none font-mono">
+            {helpOpen ? "-" : "?"}
+          </span>
+        </button>
+        {helpOpen ? (
+          <div className="pointer-events-auto w-72 rounded-2xl border border-white/10 bg-slate-950/80 p-4 text-xs text-slate-200 shadow-2xl backdrop-blur">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.4em] text-slate-400">
+              Editor Help
+            </p>
+            <ol className="mt-3 space-y-3 list-decimal pl-4 text-left text-[12px] leading-relaxed text-slate-200">
+              <li>
+                First, define the overall shape using the outline mask (green
+                points/lines). To add a new point, click on the green dotted
+                line.
+              </li>
+              <li>
+                Next, left-click to add a segment for each separate piece of the
+                ornament. Double-click to change the text labels. Drag points to
+                rotate or elongate. Adjust the settings to alter the look of the
+                segment pieces.
+              </li>
+              <li>
+                Third, right-click to add a connector from the background to
+                your top segment. Add more connectors until all segments are
+                connected. Change the connector length in settings to match your
+                jump rings (10mm jump rings give about 8mm of connector length).
+              </li>
+            </ol>
           </div>
         ) : null}
       </div>

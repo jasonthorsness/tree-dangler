@@ -189,98 +189,100 @@ function EditorCard() {
 
   return (
     <div className="p-4">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.4em]">
-            Ornament Editor
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <button
-            type="button"
-            onClick={handleSave}
-            className="rounded-full border border-slate-600 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-100 transition hover:border-slate-400"
-          >
-            Save
-          </button>
-          <button
-            type="button"
-            onClick={handleLoad}
-            className="rounded-full border border-slate-600 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-100 transition hover:border-slate-400"
-          >
-            Load
-          </button>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="application/json"
-            className="hidden"
-            onChange={handleFileChange}
-          />
-          <button
-            type="button"
-            onClick={() => {
-              dispatch({
-                type: "SET_MASK",
-                payload: {
-                  id: "default-mask",
-                  points: [
-                    { x: 200, y: 100 },
-                    { x: 100, y: 300 },
-                    { x: 300, y: 300 },
-                  ],
-                },
-              });
-              dispatch({ type: "SET_SEGMENTS", payload: [] });
-              dispatch({ type: "SET_CONNECTORS", payload: [] });
-            }}
-            className="rounded-full border border-rose-600 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-rose-100 transition hover:border-rose-400"
-          >
-            Clear
-          </button>
-          <button
-            type="button"
-            onClick={handleDownloadSvg}
-            className="rounded-full border border-emerald-400/40 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-emerald-100 transition hover:border-emerald-300"
-            disabled={!state.svgString}
-          >
-            Export SVG
-          </button>
-        </div>
-        <div className="text-xs text-right text-slate-400">
-          {state.mask.points.length} mask points · {state.segments.length}{" "}
-          segments · {state.connectors.length} connectors
-        </div>
-      </div>
-      <div className="mt-4 grid gap-2 grid-cols-3">
-        <div className="flex flex-col gap-4">
-          <div className="flex justify-center">
-            <EditorPane
-              width={width}
-              height={height}
-              className="rounded-2xl border border-slate-800 w-full max-w-[600px] aspect-[3/4]"
+      <div className="mx-auto w-full max-w-[1800px]">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:gap-6">
+          <div className="flex flex-col gap-1">
+            <p className="text-xs font-semibold uppercase tracking-[0.4em]">
+              Ornament Editor
+            </p>
+            <div className="text-xs text-slate-400">
+              {state.mask.points.length} mask points · {state.segments.length}{" "}
+              segments · {state.connectors.length} connectors
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-2 sm:ml-auto sm:justify-end">
+            <button
+              type="button"
+              onClick={handleSave}
+              className="rounded-full border border-slate-600 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-100 transition hover:border-slate-400"
+            >
+              Save
+            </button>
+            <button
+              type="button"
+              onClick={handleLoad}
+              className="rounded-full border border-slate-600 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-100 transition hover:border-slate-400"
+            >
+              Load
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="application/json"
+              className="hidden"
+              onChange={handleFileChange}
             />
+            <button
+              type="button"
+              onClick={() => {
+                dispatch({
+                  type: "SET_MASK",
+                  payload: {
+                    id: "default-mask",
+                    points: [
+                      { x: 200, y: 100 },
+                      { x: 100, y: 300 },
+                      { x: 300, y: 300 },
+                    ],
+                  },
+                });
+                dispatch({ type: "SET_SEGMENTS", payload: [] });
+                dispatch({ type: "SET_CONNECTORS", payload: [] });
+              }}
+              className="rounded-full border border-rose-600 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-rose-100 transition hover:border-rose-400"
+            >
+              Clear
+            </button>
+            <button
+              type="button"
+              onClick={handleDownloadSvg}
+              className="rounded-full border border-emerald-400/40 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-emerald-100 transition hover:border-emerald-300"
+              disabled={!state.svgString}
+            >
+              Export SVG
+            </button>
           </div>
         </div>
-
-        <div className="flex flex-col gap-4">
-          <div className="flex justify-center">
-            <SimulationPane
-              width={width}
-              height={height}
-              resetToken={resetToken}
-              onResetRequest={handleReset}
-              className="rounded-2xl border border-slate-800 w-full max-w-[600px] aspect-[3/4]"
-            />
+        <div className="mt-4 grid gap-2 grid-cols-3">
+          <div className="flex flex-col gap-4">
+            <div className="flex justify-center">
+              <EditorPane
+                width={width}
+                height={height}
+                className="rounded-2xl border border-slate-800 w-full max-w-[600px] aspect-[3/4]"
+              />
+            </div>
           </div>
-        </div>
 
-        <div className="flex flex-col gap-4">
-          <div className="w-full max-w-[600px]">
-            <SvgExportPane
-              className="rounded-2xl border border-slate-800 p-4 w-full"
-              showDownload={false}
-            />
+          <div className="flex flex-col gap-4">
+            <div className="flex justify-center">
+              <SimulationPane
+                width={width}
+                height={height}
+                resetToken={resetToken}
+                onResetRequest={handleReset}
+                className="rounded-2xl border border-slate-800 w-full max-w-[600px] aspect-[3/4]"
+              />
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-4">
+            <div className="w-full max-w-[600px]">
+              <SvgExportPane
+                className="rounded-2xl border border-slate-800 p-4 w-full"
+                showDownload={false}
+              />
+            </div>
           </div>
         </div>
       </div>
