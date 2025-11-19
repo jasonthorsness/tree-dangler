@@ -24,7 +24,7 @@ import {
   moveConnectorEndpoint,
   mmToPx,
 } from "../logic/connectors";
-import type { LineSegment, MaskPolygon, Point } from "../types";
+import type { LineSegment, MaskPolygon, Point, TreeDanglerState } from "../types";
 
 interface DragInfo {
   kind: "mask" | "segment" | "connector";
@@ -51,7 +51,17 @@ type EditorSnapshot = {
 
 export function EditorPane({ width, height, className }: EditorPaneProps) {
   const {
-    state: { mask, segments, connectors, piecePolygons, connectorLength },
+    state: {
+      mask,
+      segments,
+      connectors,
+      piecePolygons,
+      connectorLength,
+      shrinkThreshold,
+      growThreshold,
+      noiseAmplitude,
+      noiseSeed,
+    },
     dispatch,
   } = useTreeDanglerState();
 
@@ -67,6 +77,7 @@ export function EditorPane({ width, height, className }: EditorPaneProps) {
     id: string;
     value: string;
   } | null>(null);
+  const [panelOpen, setPanelOpen] = useState(true);
   const [lastClick, setLastClick] = useState<{
     id: string;
     timestamp: number;
@@ -85,6 +96,19 @@ export function EditorPane({ width, height, className }: EditorPaneProps) {
   const setConnectors = useCallback(
     (next: LineSegment[]) =>
       dispatch({ type: "SET_CONNECTORS", payload: next }),
+    [dispatch]
+  );
+  const updateDistanceConfig = useCallback(
+    (
+      patch: Partial<
+        Pick<
+          TreeDanglerState,
+          "shrinkThreshold" | "growThreshold" | "noiseAmplitude" | "noiseSeed"
+        >
+      >
+    ) => {
+      dispatch({ type: "SET_DISTANCE_CONFIG", payload: patch });
+    },
     [dispatch]
   );
   const undoStackRef = useRef<EditorSnapshot[]>([]);
@@ -673,6 +697,120 @@ export function EditorPane({ width, height, className }: EditorPaneProps) {
         onPointerLeave={clearDrag}
         onKeyDown={handleKeyDown}
       />
+      <div className="pointer-events-none absolute right-4 top-4 z-10 flex flex-col items-end gap-2">
+        <button
+          type="button"
+          className="pointer-events-auto inline-flex items-center gap-2 rounded-full border border-white/10 bg-slate-900/80 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.3em] text-slate-100 shadow-lg backdrop-blur transition hover:border-white/30"
+          onClick={() => setPanelOpen((prev) => !prev)}
+        >
+          {panelOpen ? "Hide" : "Show"} Noise
+          <span className="text-lg leading-none">{panelOpen ? "-" : "+"}</span>
+        </button>
+        {panelOpen ? (
+          <div className="pointer-events-auto w-64 rounded-2xl border border-white/10 bg-slate-950/80 p-4 text-xs text-slate-200 shadow-2xl backdrop-blur">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.4em] text-slate-400">
+              Mask Noise
+            </p>
+            <div className="mt-3 space-y-3">
+              <label className="flex flex-col gap-1">
+                <span className="flex items-center justify-between text-[11px] uppercase tracking-[0.3em] text-slate-400">
+                  Shrink
+                  <span>{shrinkThreshold.toFixed(1)} px</span>
+                </span>
+                <input
+                  type="range"
+                  min={0}
+                  max={40}
+                  step={0.5}
+                  value={shrinkThreshold}
+                  onChange={(event) =>
+                    updateDistanceConfig({
+                      shrinkThreshold: Number(event.target.value),
+                    })
+                  }
+                  className="w-full accent-sky-300"
+                />
+              </label>
+              <label className="flex flex-col gap-1">
+                <span className="flex items-center justify-between text-[11px] uppercase tracking-[0.3em] text-slate-400">
+                  Grow
+                  <span>{growThreshold.toFixed(1)} px</span>
+                </span>
+                <input
+                  type="range"
+                  min={0}
+                  max={40}
+                  step={0.5}
+                  value={growThreshold}
+                  onChange={(event) =>
+                    updateDistanceConfig({
+                      growThreshold: Number(event.target.value),
+                    })
+                  }
+                  className="w-full accent-amber-300"
+                />
+              </label>
+              <label className="flex flex-col gap-1">
+                <span className="flex items-center justify-between text-[11px] uppercase tracking-[0.3em] text-slate-400">
+                  Noise
+                  <span>{noiseAmplitude.toFixed(1)}</span>
+                </span>
+                <input
+                  type="range"
+                  min={0}
+                  max={50}
+                  step={0.5}
+                  value={noiseAmplitude}
+                  onChange={(event) =>
+                    updateDistanceConfig({
+                      noiseAmplitude: Number(event.target.value),
+                    })
+                  }
+                  className="w-full accent-emerald-300"
+                />
+              </label>
+              <label className="flex flex-col gap-1">
+                <span className="text-[11px] uppercase tracking-[0.3em] text-slate-400">
+                  Noise Seed
+                </span>
+                <input
+                  type="number"
+                  min={0}
+                  step={1}
+                  value={noiseSeed}
+                  onChange={(event) =>
+                    updateDistanceConfig({
+                      noiseSeed: Number(event.target.value),
+                    })
+                  }
+                  className="rounded-lg border border-white/10 bg-slate-900/80 px-2 py-1 text-slate-100"
+                />
+              </label>
+              <label className="flex flex-col gap-2">
+                <span className="text-[11px] uppercase tracking-[0.3em] text-slate-400">
+                  Connector Length
+                </span>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    min={2}
+                    step={0.5}
+                    value={connectorLength}
+                    onChange={(event) =>
+                      dispatch({
+                        type: "SET_CONNECTOR_LENGTH",
+                        payload: Number(event.target.value),
+                      })
+                    }
+                    className="w-24 rounded-lg border border-white/10 bg-slate-900/80 px-2 py-1 text-slate-100"
+                  />
+                  <span className="text-slate-400">mm</span>
+                </div>
+              </label>
+            </div>
+          </div>
+        ) : null}
+      </div>
       {labelEditor && editorPosition ? (
         <input
           autoFocus

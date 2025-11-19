@@ -277,12 +277,6 @@ function EditorCard() {
                 Export SVG
               </button>
             </div>
-            <DistanceFieldPane
-              width={300}
-              height={800}
-              className="w-full"
-              showPreview={false}
-            />
           </div>
         </div>
 
