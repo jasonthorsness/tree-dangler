@@ -29,6 +29,7 @@ export interface TreeDanglerState {
   noiseAmplitude: number;
   noiseSeed: number;
   connectorLength: number;
+  holeDiameter: number;
   svgString?: string;
 }
 

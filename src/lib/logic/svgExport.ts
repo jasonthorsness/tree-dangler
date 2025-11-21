@@ -2,7 +2,7 @@ import { line, curveCatmullRomClosed } from "d3-shape";
 import type { LineSegment, Polygon } from "../types";
 
 const MM_TO_PX = 5;
-const HOLE_RADIUS_MM = 1;
+const HOLE_STROKE_MM = 0.18;
 const MIN_POINT_GAP_PX = 0.5;
 
 function pxToMm(px: number) {
@@ -68,7 +68,8 @@ export function generateSVG(
   connectors: LineSegment[],
   segments: LineSegment[],
   width: number,
-  height: number
+  height: number,
+  holeDiameterMm: number
 ): string {
   const svgWidth = pxToMm(width);
   const svgHeight = pxToMm(height);
@@ -86,14 +87,14 @@ export function generateSVG(
 
   const holes = connectors
     .flatMap((connector) => [connector.start, connector.end])
-    .map(
-      (point) =>
-        `<circle cx="${pxToMm(point.x).toFixed(2)}" cy="${pxToMm(
-          point.y
-        ).toFixed(
-          2
-        )}" r="${HOLE_RADIUS_MM}" fill="none" stroke="${secondaryStroke}" stroke-width="0.18" />`
-    )
+    .map((point) => {
+      const radius = Math.max(holeDiameterMm / 2 - HOLE_STROKE_MM / 2, 0);
+      return `<circle cx="${pxToMm(point.x).toFixed(2)}" cy="${pxToMm(
+        point.y
+      ).toFixed(2)}" r="${radius.toFixed(
+        3
+      )}" fill="none" stroke="${secondaryStroke}" stroke-width="${HOLE_STROKE_MM}" />`;
+    })
     .join("\n");
 
   const segmentLabels = segments

@@ -33,6 +33,7 @@ type Action =
       >;
     }
   | { type: "SET_CONNECTOR_LENGTH"; payload: number }
+  | { type: "SET_HOLE_DIAMETER"; payload: number }
   | { type: "SET_SVG_STRING"; payload: string };
 
 // Initial state; populated from default_scene.json on mount
@@ -46,6 +47,7 @@ const initialState: TreeDanglerState = {
   noiseAmplitude: 5,
   noiseSeed: 0,
   connectorLength: 8,
+  holeDiameter: 2,
   svgString: "",
 };
 
@@ -72,6 +74,8 @@ function reducer(state: TreeDanglerState, action: Action): TreeDanglerState {
           resizeConnectorFromStart(segment, mmToPx(action.payload), state.mask)
         ),
       };
+    case "SET_HOLE_DIAMETER":
+      return { ...state, holeDiameter: action.payload };
     default:
       return state;
   }
@@ -110,6 +114,10 @@ function applyScene(
   dispatch({
     type: "SET_CONNECTOR_LENGTH",
     payload: scene.noise.connectorLength,
+  });
+  dispatch({
+    type: "SET_HOLE_DIAMETER",
+    payload: scene.noise.holeDiameter,
   });
   if (!opts?.suppressHistory && typeof window !== "undefined") {
     window.dispatchEvent(new Event("tree-dangler-push-undo"));
@@ -204,6 +212,7 @@ export function TreeDanglerProvider({ children }: { children: ReactNode }) {
       roundThreshold: roundPx,
       noiseAmplitude: state.noiseAmplitude,
       noiseSeed: state.noiseSeed,
+      holeDiameter: state.holeDiameter,
     },
     dispatch
   );
@@ -238,6 +247,7 @@ interface DistanceProcessingConfig {
   roundThreshold: number;
   noiseAmplitude: number;
   noiseSeed: number;
+  holeDiameter: number;
 }
 
 function useWorker(
@@ -301,5 +311,6 @@ function useWorker(
     config.roundThreshold,
     config.noiseAmplitude,
     config.noiseSeed,
+    config.holeDiameter,
   ]);
 }

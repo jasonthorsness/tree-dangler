@@ -26,6 +26,7 @@ export type SerializedScene = {
     noiseAmplitude: number;
     noiseSeed: number;
     connectorLength: number;
+    holeDiameter: number;
   };
 };
 
@@ -86,6 +87,7 @@ export function serializeScene(state: TreeDanglerState): SerializedScene {
       noiseAmplitude: roundToTwoDecimals(state.noiseAmplitude),
       noiseSeed: roundToTwoDecimals(state.noiseSeed),
       connectorLength: roundToTwoDecimals(state.connectorLength),
+      holeDiameter: roundToTwoDecimals(state.holeDiameter),
     },
   };
 }
@@ -151,6 +153,9 @@ export function deserializeScene(input: unknown): NormalizedScene | null {
     ),
     connectorLength: roundToTwoDecimals(
       typeof noise.connectorLength === "number" ? noise.connectorLength : 8
+    ),
+    holeDiameter: roundToTwoDecimals(
+      typeof noise.holeDiameter === "number" ? noise.holeDiameter : 2
     ),
   };
 

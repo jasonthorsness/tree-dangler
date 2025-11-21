@@ -25,6 +25,7 @@ interface WorkerRequest {
     roundThreshold: number;
     noiseAmplitude: number;
     noiseSeed: number;
+    holeDiameter: number;
   };
   spacing?: number;
 }
@@ -185,7 +186,8 @@ function runNextComputation() {
         connectors,
         segments,
         width,
-        height
+        height,
+        config.holeDiameter
       );
 
       ctx.postMessage({

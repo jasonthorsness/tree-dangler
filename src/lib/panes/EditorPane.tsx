@@ -67,6 +67,7 @@ type EditorSnapshot = {
   noiseAmplitude: number;
   noiseSeed: number;
   connectorLength: number;
+  holeDiameter: number;
 };
 
 function rotateConnectorNinetyDegrees(segment: LineSegment): LineSegment {
@@ -91,6 +92,7 @@ export function EditorPane({ width, height, className }: EditorPaneProps) {
       connectors,
       piecePolygons,
       connectorLength,
+      holeDiameter,
       gap,
       round,
       noiseAmplitude,
@@ -170,6 +172,7 @@ export function EditorPane({ width, height, className }: EditorPaneProps) {
       noiseAmplitude,
       noiseSeed,
       connectorLength,
+      holeDiameter,
     };
   }, [
     mask,
@@ -180,6 +183,7 @@ export function EditorPane({ width, height, className }: EditorPaneProps) {
     noiseAmplitude,
     noiseSeed,
     connectorLength,
+    holeDiameter,
   ]);
   const pushUndoSnapshot = useCallback(() => {
     redoStackRef.current = [];
@@ -210,6 +214,10 @@ export function EditorPane({ width, height, className }: EditorPaneProps) {
       dispatch({
         type: "SET_CONNECTOR_LENGTH",
         payload: snapshot.connectorLength,
+      });
+      dispatch({
+        type: "SET_HOLE_DIAMETER",
+        payload: snapshot.holeDiameter,
       });
       setSelectedSegmentId(null);
       setSelectedConnectorId(null);
@@ -986,6 +994,28 @@ export function EditorPane({ width, height, className }: EditorPaneProps) {
                       pushUndoSnapshot();
                       dispatch({
                         type: "SET_CONNECTOR_LENGTH",
+                        payload: Number(event.target.value),
+                      });
+                    }}
+                    className="w-24 rounded-lg border border-cyan-300/35 bg-[rgba(7,20,44,0.85)] px-2 py-1 text-[var(--ink)] outline-none transition focus:border-cyan-200/70"
+                  />
+                  <span className="text-cyan-100/70">mm</span>
+                </div>
+              </label>
+              <label className="flex flex-col gap-2">
+                <span className="text-[11px] uppercase tracking-[0.3em] text-cyan-100/70">
+                  Hole Diameter
+                </span>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    min={0.5}
+                    step={0.1}
+                    value={holeDiameter}
+                    onChange={(event) => {
+                      pushUndoSnapshot();
+                      dispatch({
+                        type: "SET_HOLE_DIAMETER",
                         payload: Number(event.target.value),
                       });
                     }}

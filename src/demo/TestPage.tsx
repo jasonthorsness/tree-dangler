@@ -168,6 +168,10 @@ function EditorCard() {
         type: "SET_CONNECTOR_LENGTH",
         payload: scene.noise.connectorLength,
       });
+      dispatch({
+        type: "SET_HOLE_DIAMETER",
+        payload: scene.noise.holeDiameter,
+      });
     },
     [dispatch]
   );
