@@ -256,9 +256,9 @@ export function SimulationPane({
       <div
         className={`${
           className ?? ""
-        } flex h-[600px] w-[600px] items-center justify-center rounded-2xl border border-slate-800 bg-slate-900/40`}
+        } flex h-[600px] w-[600px] items-center justify-center rounded-2xl border border-cyan-300/25 bg-[rgba(7,24,54,0.65)]`}
       >
-        <p className="text-xs text-slate-500">
+        <p className="text-xs text-cyan-100/70">
           Simulation unavailable for this configuration.
         </p>
       </div>

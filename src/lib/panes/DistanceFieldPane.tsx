@@ -42,12 +42,12 @@ export function DistanceFieldPane({
         <DistancePreviewPane
           width={width}
           height={height}
-          className="rounded-2xl border border-slate-800"
+          className="rounded-2xl border border-cyan-300/25 bg-[rgba(4,12,28,0.65)] shadow-2xl shadow-cyan-500/10"
         />
       ) : null}
-      <div className="mt-4 space-y-3 text-sm text-slate-300">
+      <div className="mt-4 space-y-3 text-sm text-[var(--ink-muted)]">
         <div className="flex flex-col gap-1">
-          <label className="flex items-center justify-between text-xs uppercase tracking-widest text-slate-400">
+          <label className="flex items-center justify-between text-xs uppercase tracking-widest text-cyan-100/70">
             Gap <span>{gap.toFixed(1)} mm</span>
           </label>
           <input
@@ -62,7 +62,7 @@ export function DistanceFieldPane({
           />
         </div>
         <div className="flex flex-col gap-1">
-          <label className="flex items-center justify-between text-xs uppercase tracking-widest text-slate-400">
+          <label className="flex items-center justify-between text-xs uppercase tracking-widest text-cyan-100/70">
             Round <span>{round.toFixed(1)} mm</span>
           </label>
           <input
@@ -78,7 +78,7 @@ export function DistanceFieldPane({
         </div>
         <div className="space-y-3 text-xs">
           <label className="flex flex-col gap-1">
-            <span className="flex items-center justify-between text-slate-400">
+            <span className="flex items-center justify-between text-cyan-100/70">
               Noise Amplitude <span>{noiseAmplitude.toFixed(1)}</span>
             </span>
             <input
@@ -93,7 +93,7 @@ export function DistanceFieldPane({
             />
           </label>
           <label className="flex flex-col gap-1">
-            <span className="text-slate-400">Noise Seed</span>
+            <span className="text-cyan-100/70">Noise Seed</span>
             <input
               type="number"
               min={0}
@@ -102,7 +102,7 @@ export function DistanceFieldPane({
               onChange={(event) =>
                 updateConfig({ noiseSeed: Number(event.target.value) })
               }
-              className="rounded border border-slate-700 bg-slate-900 px-2 py-1 text-slate-100"
+              className="rounded border border-cyan-400/30 bg-[rgba(7,20,44,0.8)] px-2 py-1 text-[var(--ink)] outline-none transition focus:border-cyan-200/70"
             />
           </label>
         </div>

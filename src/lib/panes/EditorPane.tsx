@@ -804,7 +804,7 @@ export function EditorPane({ width, height, className }: EditorPaneProps) {
       <div className="pointer-events-none absolute right-4 top-4 z-10 flex flex-col items-end gap-2">
         <button
           type="button"
-          className="pointer-events-auto inline-flex items-center gap-2 rounded-full border border-white/10 bg-slate-900/80 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.3em] text-slate-100 shadow-lg backdrop-blur transition hover:border-white/30"
+          className="pointer-events-auto inline-flex items-center gap-2 rounded-full border border-cyan-300/35 bg-[rgba(8,26,54,0.85)] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.3em] text-cyan-50 shadow-lg shadow-cyan-500/15 transition hover:border-cyan-200/70 hover:bg-[rgba(18,48,88,0.95)]"
           onClick={() => setPanelOpen((prev) => !prev)}
         >
           Settings
@@ -813,13 +813,13 @@ export function EditorPane({ width, height, className }: EditorPaneProps) {
           </span>
         </button>
         {panelOpen ? (
-          <div className="pointer-events-auto w-64 rounded-2xl border border-white/10 bg-slate-950/80 p-4 text-xs text-slate-200 shadow-2xl backdrop-blur">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.4em] text-slate-400">
+          <div className="pointer-events-auto w-64 rounded-2xl border border-cyan-300/30 bg-[rgba(4,12,28,0.95)] p-4 text-xs text-[var(--ink)] shadow-2xl backdrop-blur">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.4em] text-cyan-100/70">
               Mask Noise
             </p>
             <div className="mt-3 space-y-3">
               <label className="flex flex-col gap-1">
-                <span className="flex items-center justify-between text-[11px] uppercase tracking-[0.3em] text-slate-400">
+                <span className="flex items-center justify-between text-[11px] uppercase tracking-[0.3em] text-cyan-100/70">
                   Gap
                   <span>{gap.toFixed(1)} mm</span>
                 </span>
@@ -835,11 +835,11 @@ export function EditorPane({ width, height, className }: EditorPaneProps) {
                       gap: Number(event.target.value),
                     })
                   }
-                  className="w-full accent-sky-300"
+                  className="w-full accent-cyan-200"
                 />
               </label>
               <label className="flex flex-col gap-1">
-                <span className="flex items-center justify-between text-[11px] uppercase tracking-[0.3em] text-slate-400">
+                <span className="flex items-center justify-between text-[11px] uppercase tracking-[0.3em] text-cyan-100/70">
                   Round
                   <span>{round.toFixed(1)} mm</span>
                 </span>
@@ -855,11 +855,11 @@ export function EditorPane({ width, height, className }: EditorPaneProps) {
                       round: Number(event.target.value),
                     })
                   }
-                  className="w-full accent-amber-300"
+                  className="w-full accent-indigo-200"
                 />
               </label>
               <label className="flex flex-col gap-1">
-                <span className="flex items-center justify-between text-[11px] uppercase tracking-[0.3em] text-slate-400">
+                <span className="flex items-center justify-between text-[11px] uppercase tracking-[0.3em] text-cyan-100/70">
                   Noise
                   <span>{noiseAmplitude.toFixed(1)}</span>
                 </span>
@@ -875,11 +875,11 @@ export function EditorPane({ width, height, className }: EditorPaneProps) {
                       noiseAmplitude: Number(event.target.value),
                     })
                   }
-                  className="w-full accent-emerald-300"
+                  className="w-full accent-cyan-300"
                 />
               </label>
               <label className="flex flex-col gap-1">
-                <span className="text-[11px] uppercase tracking-[0.3em] text-slate-400">
+                <span className="text-[11px] uppercase tracking-[0.3em] text-cyan-100/70">
                   Noise Seed
                 </span>
                 <input
@@ -893,11 +893,11 @@ export function EditorPane({ width, height, className }: EditorPaneProps) {
                       noiseSeed: Number(event.target.value),
                     });
                   }}
-                  className="rounded-lg border border-white/10 bg-slate-900/80 px-2 py-1 text-slate-100"
+                  className="rounded-lg border border-cyan-300/35 bg-[rgba(7,20,44,0.85)] px-2 py-1 text-[var(--ink)] outline-none transition focus:border-cyan-200/70"
                 />
               </label>
               <label className="flex flex-col gap-2">
-                <span className="text-[11px] uppercase tracking-[0.3em] text-slate-400">
+                <span className="text-[11px] uppercase tracking-[0.3em] text-cyan-100/70">
                   Connector Length
                 </span>
                 <div className="flex items-center gap-2">
@@ -913,9 +913,9 @@ export function EditorPane({ width, height, className }: EditorPaneProps) {
                         payload: Number(event.target.value),
                       });
                     }}
-                    className="w-24 rounded-lg border border-white/10 bg-slate-900/80 px-2 py-1 text-slate-100"
+                    className="w-24 rounded-lg border border-cyan-300/35 bg-[rgba(7,20,44,0.85)] px-2 py-1 text-[var(--ink)] outline-none transition focus:border-cyan-200/70"
                   />
-                  <span className="text-slate-400">mm</span>
+                  <span className="text-cyan-100/70">mm</span>
                 </div>
               </label>
             </div>
@@ -925,7 +925,7 @@ export function EditorPane({ width, height, className }: EditorPaneProps) {
       {labelEditor && editorPosition ? (
         <input
           autoFocus
-          className="absolute rounded border border-slate-500 bg-slate-900/95 px-2 py-1 text-sm text-slate-100 shadow-lg"
+          className="absolute rounded border border-cyan-300/35 bg-[rgba(4,12,28,0.95)] px-2 py-1 text-sm text-[var(--ink)] shadow-lg shadow-cyan-500/20 outline-none focus:border-cyan-200/70"
           style={{
             top: `${(editorPosition.y / height) * 100}%`,
             left: `${(editorPosition.x / width) * 100}%`,

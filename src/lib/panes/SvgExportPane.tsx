@@ -43,7 +43,7 @@ export function SvgExportPane({
           />
         ) : (
           <div className="flex h-full w-full items-center justify-center">
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-[var(--ink-muted)]">
               Generate geometry first to preview the SVG.
             </p>
           </div>
@@ -54,7 +54,7 @@ export function SvgExportPane({
           <button
             type="button"
             onClick={handleDownload}
-            className="rounded-full border border-emerald-400/40 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-emerald-100 transition hover:border-emerald-300"
+            className="rounded-full border border-transparent bg-gradient-to-r from-cyan-300 via-cyan-200 to-indigo-300 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-900 shadow-lg shadow-cyan-500/30 transition hover:shadow-indigo-500/30 disabled:from-cyan-300/50 disabled:via-cyan-200/50 disabled:to-indigo-300/50 disabled:text-slate-700 disabled:cursor-not-allowed"
             disabled={!svgString}
           >
             Download SVG

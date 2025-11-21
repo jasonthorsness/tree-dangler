@@ -197,14 +197,14 @@ function EditorCard() {
   );
 
   return (
-    <div className="p-4">
-      <div className="mx-auto w-full max-w-[1200px]">
+    <div className="p-6 sm:p-8 text-[var(--ink)]">
+      <div className="mx-auto w-full max-w-[1200px] rounded-[28px] border glass-panel p-6 sm:p-8">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:gap-6">
           <div className="flex flex-col gap-1">
-            <p className="text-xs font-semibold uppercase tracking-[0.4em]">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.4em] text-cyan-100">
               Tree Dangler
             </p>
-            <div className="text-xs text-slate-400">
+            <div className="text-sm text-[var(--ink-muted)]">
               {state.mask.points.length} mask points · {state.segments.length}{" "}
               segments · {state.connectors.length} connectors
             </div>
@@ -214,7 +214,7 @@ function EditorCard() {
               <button
                 type="button"
                 onClick={() => setHelpOpen((prev) => !prev)}
-                className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-slate-900/80 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.3em] text-slate-100 shadow-lg backdrop-blur transition hover:border-white/30"
+                className="inline-flex items-center gap-2 rounded-full border border-cyan-300/40 bg-[rgba(9,32,66,0.8)] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.3em] text-cyan-50 shadow-lg shadow-cyan-500/15 transition hover:border-cyan-200/70 hover:bg-[rgba(23,58,105,0.9)]"
               >
                 Help
                 <span className="text-lg leading-none font-mono">
@@ -222,8 +222,8 @@ function EditorCard() {
                 </span>
               </button>
               {helpOpen ? (
-                <div className="absolute left-0 top-full z-20 mt-2 w-72 rounded-2xl border border-white/10 bg-slate-950 p-4 text-xs text-slate-200 shadow-2xl backdrop-blur">
-                  <ol className="mt-3 space-y-3 list-decimal pl-4 text-left text-[12px] leading-relaxed text-slate-200">
+                <div className="absolute left-0 top-full z-20 mt-2 w-72 rounded-2xl border border-cyan-300/30 bg-[rgba(5,14,32,0.95)] p-4 text-xs text-[var(--ink)] shadow-2xl backdrop-blur">
+                  <ol className="mt-3 space-y-3 list-decimal pl-4 text-left text-[12px] leading-relaxed text-[var(--ink-muted)]">
                     <li>
                       Define the overall shape using the green outline. To add a
                       new point, click on a line.
@@ -251,21 +251,21 @@ function EditorCard() {
             <button
               type="button"
               onClick={handleCopyLink}
-              className="rounded-full border border-slate-600 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-100 transition hover:border-slate-400"
+              className="rounded-full border border-cyan-300/40 bg-white/5 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-cyan-50 shadow-sm shadow-cyan-500/10 transition hover:border-cyan-200/70 hover:bg-cyan-500/10"
             >
               Copy Link
             </button>
             <button
               type="button"
               onClick={handleSave}
-              className="rounded-full border border-slate-600 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-100 transition hover:border-slate-400"
+              className="rounded-full border border-cyan-300/40 bg-white/5 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-cyan-50 shadow-sm shadow-cyan-500/10 transition hover:border-cyan-200/70 hover:bg-cyan-500/10"
             >
               Save
             </button>
             <button
               type="button"
               onClick={handleLoad}
-              className="rounded-full border border-slate-600 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-100 transition hover:border-slate-400"
+              className="rounded-full border border-cyan-300/40 bg-white/5 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-cyan-50 shadow-sm shadow-cyan-500/10 transition hover:border-cyan-200/70 hover:bg-cyan-500/10"
             >
               Load
             </button>
@@ -301,14 +301,14 @@ function EditorCard() {
                   payload: { gap: 1.5, round: 2, noiseAmplitude: 3 },
                 });
               }}
-              className="rounded-full border border-rose-600 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-rose-100 transition hover:border-rose-400"
+              className="rounded-full border border-rose-400/60 bg-rose-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-rose-100 shadow-sm transition hover:border-rose-200/90 hover:bg-rose-500/15"
             >
               Clear
             </button>
             <button
               type="button"
               onClick={handleDownloadSvg}
-              className="rounded-full border border-emerald-400/40 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-emerald-100 transition hover:border-emerald-300"
+              className="rounded-full border border-transparent bg-gradient-to-r from-cyan-300 via-cyan-200 to-indigo-300 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-900 shadow-lg shadow-cyan-500/30 transition hover:shadow-indigo-500/30 disabled:from-cyan-300/50 disabled:via-cyan-200/50 disabled:to-indigo-300/50 disabled:text-slate-700 disabled:cursor-not-allowed"
               disabled={!state.svgString}
             >
               Export SVG
@@ -321,7 +321,7 @@ function EditorCard() {
               <EditorPane
                 width={width}
                 height={height}
-                className="rounded-2xl border border-slate-800 w-full max-w-[600px] aspect-[3/4]"
+                className="rounded-2xl border border-cyan-300/25 bg-[rgba(7,24,54,0.8)] shadow-2xl shadow-cyan-500/10 w-full max-w-[600px] aspect-[3/4]"
               />
             </div>
           </div>
@@ -330,14 +330,14 @@ function EditorCard() {
             <div className="flex justify-center">
               <div className="relative w-full max-w-[600px]">
                 <div className="pointer-events-none absolute left-4 top-4 z-10">
-                  <div className="pointer-events-auto inline-flex items-center gap-1 rounded-full border border-white/10 bg-slate-900/80 p-1 text-[11px] font-semibold uppercase tracking-[0.3em] text-slate-100 shadow-lg backdrop-blur">
+                  <div className="pointer-events-auto inline-flex items-center gap-1 rounded-full border border-cyan-300/35 bg-[rgba(8,26,54,0.85)] p-1 text-[11px] font-semibold uppercase tracking-[0.3em] text-cyan-50 shadow-lg shadow-cyan-500/15">
                     <button
                       type="button"
                       onClick={() => setPreviewMode("simulation")}
                       className={`rounded-full px-3 py-1 transition ${
                         previewMode === "simulation"
-                          ? "bg-white text-slate-900"
-                          : "text-slate-400 hover:text-slate-100"
+                          ? "bg-gradient-to-r from-cyan-300 to-sky-200 text-slate-900 shadow-md shadow-cyan-500/20"
+                          : "text-cyan-100/70 hover:text-cyan-50"
                       }`}
                       aria-pressed={previewMode === "simulation"}
                     >
@@ -348,8 +348,8 @@ function EditorCard() {
                       onClick={() => setPreviewMode("svg")}
                       className={`rounded-full px-3 py-1 transition ${
                         previewMode === "svg"
-                          ? "bg-white text-slate-900"
-                          : "text-slate-400 hover:text-slate-100"
+                          ? "bg-gradient-to-r from-cyan-300 to-indigo-300 text-slate-900 shadow-md shadow-cyan-500/20"
+                          : "text-cyan-100/70 hover:text-cyan-50"
                       }`}
                       aria-pressed={previewMode === "svg"}
                     >
@@ -363,10 +363,10 @@ function EditorCard() {
                     height={height}
                     resetToken={resetToken}
                     onResetRequest={handleReset}
-                    className="rounded-2xl border border-slate-800 w-full aspect-[3/4]"
+                    className="rounded-2xl border border-cyan-300/25 bg-[rgba(7,24,54,0.8)] shadow-2xl shadow-cyan-500/10 w-full aspect-[3/4]"
                   />
                 ) : (
-                  <div className="rounded-2xl border border-slate-800 w-full aspect-[3/4] bg-slate-950">
+                  <div className="rounded-2xl border border-cyan-300/25 w-full aspect-[3/4] bg-[rgba(4,12,28,0.9)] shadow-2xl shadow-cyan-500/10">
                     <SvgExportPane
                       className="h-full w-full overflow-auto p-4"
                       showDownload={false}
@@ -385,7 +385,7 @@ function EditorCard() {
 export default function TestPage() {
   return (
     <TreeDanglerProvider>
-      <div className="min-h-screen">
+      <div className="min-h-screen px-4 pb-12">
         <EditorCard />
       </div>
     </TreeDanglerProvider>

@@ -2,4 +2,45 @@
 
 :root {
   color-scheme: dark;
+  --ink: #e7f4ff;
+  --ink-muted: #a9c7e2;
+  --navy: #050b16;
+  --midnight: #0b1c34;
+  --deep-azure: #0f3055;
+  --surface: rgba(9, 28, 60, 0.72);
+  --surface-strong: rgba(12, 40, 76, 0.82);
+  --border: rgba(94, 240, 255, 0.28);
+  --border-strong: rgba(132, 109, 255, 0.4);
+  --accent: #4de2ff;
+  --accent-strong: #7e6cff;
+}
+
+body {
+  min-height: 100vh;
+  background-color: var(--navy);
+  background-image:
+    radial-gradient(circle at 18% 18%, rgba(77, 226, 255, 0.16), transparent 30%),
+    radial-gradient(circle at 78% 12%, rgba(126, 108, 255, 0.14), transparent 32%),
+    radial-gradient(circle at 70% 78%, rgba(61, 200, 255, 0.12), transparent 30%),
+    linear-gradient(145deg, #040913 0%, #09172b 36%, #0c2243 72%, #11173b 100%);
+  color: var(--ink);
+  background-attachment: fixed;
+}
+
+.glass-panel {
+  background: var(--surface);
+  border-color: var(--border);
+  box-shadow:
+    0 20px 60px rgba(0, 0, 0, 0.45),
+    0 0 0 1px rgba(255, 255, 255, 0.02);
+  backdrop-filter: blur(10px);
+}
+
+.glass-panel-strong {
+  background: var(--surface-strong);
+  border-color: var(--border-strong);
+  box-shadow:
+    0 30px 80px rgba(0, 0, 0, 0.55),
+    0 0 0 1px rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(12px);
 }

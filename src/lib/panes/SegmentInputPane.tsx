@@ -315,7 +315,7 @@ export function SegmentInputPane({
       {labelEditor && editorPosition ? (
         <input
           autoFocus
-          className="absolute rounded border border-slate-500 bg-slate-900/95 px-2 py-1 text-xs text-slate-100 shadow-lg"
+          className="absolute rounded border border-cyan-300/35 bg-[rgba(4,12,28,0.95)] px-2 py-1 text-xs text-[var(--ink)] shadow-lg shadow-cyan-500/20 outline-none focus:border-cyan-200/70"
           style={{
             top: editorPosition.y - 12,
             left: editorPosition.x - 60,
