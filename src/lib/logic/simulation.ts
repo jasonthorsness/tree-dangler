@@ -89,17 +89,32 @@ function attachToBody(
   bodies: Matter.Body[],
   point: { x: number; y: number }
 ) {
-  for (const body of bodies) {
-    if (Matter.Vertices.contains(body.vertices, point)) {
-      return {
-        body,
-        point: {
-          x: point.x - body.position.x,
-          y: point.y - body.position.y,
-        },
-        isStub: false,
-      };
+  const findContainingBody = () => {
+    for (const body of bodies) {
+      if (body.parts && body.parts.length > 1) {
+        for (let i = 1; i < body.parts.length; i += 1) {
+          const part = body.parts[i];
+          if (Matter.Vertices.contains(part.vertices, point)) {
+            return body;
+          }
+        }
+      } else if (Matter.Vertices.contains(body.vertices, point)) {
+        return body;
+      }
     }
+    return null;
+  };
+
+  const containing = findContainingBody();
+  if (containing) {
+    return {
+      body: containing,
+      point: {
+        x: point.x - containing.position.x,
+        y: point.y - containing.position.y,
+      },
+      isStub: false,
+    };
   }
 
   const stub = Matter.Bodies.circle(point.x, point.y, 2, {
