@@ -568,6 +568,10 @@ export function EditorPane({ width, height, className }: EditorPaneProps) {
       }
 
       // Create new on click: left => segment, right => connector
+      if (labelEditor) {
+        // If we're mid-label edit, ignore canvas clicks so we don't create new elements by accident.
+        return;
+      }
       if (isRightClick) {
         pushUndoSnapshot();
         const conn = createConnectorAtPoint(mask, point, pxLength);
@@ -600,6 +604,7 @@ export function EditorPane({ width, height, className }: EditorPaneProps) {
       setConnectors,
       setSegments,
       pushUndoSnapshot,
+      labelEditor,
     ]
   );
 
