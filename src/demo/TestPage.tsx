@@ -5,7 +5,12 @@ import { SvgExportPane } from "../lib/panes/SvgExportPane";
 import EditorPane, { EXTERNAL_UNDO_EVENT } from "../lib/panes/EditorPane";
 import { TreeDanglerProvider, useTreeDanglerState } from "../lib/state/store";
 import type { TreeDanglerState } from "../lib/types";
-import { mmToPx, pxToMm } from "../lib/logic/connectors";
+import { mmToPx } from "../lib/logic/connectors";
+import {
+  deserializeScene,
+  encodeSceneToHash,
+  serializeScene,
+} from "../lib/logic/sceneSerialization";
 
 const CLEAR_MASK_POINTS = [
   { x: mmToPx(60), y: mmToPx(30) },
@@ -65,18 +70,7 @@ function EditorCard() {
   }, []);
 
   const handleSave = useCallback(async () => {
-    const payload = {
-      mask: state.mask,
-      segments: state.segments,
-      connectors: state.connectors,
-      noise: {
-        gap: state.gap,
-        round: state.round,
-        noiseAmplitude: state.noiseAmplitude,
-        noiseSeed: state.noiseSeed,
-        connectorLength: state.connectorLength,
-      },
-    };
+    const payload = serializeScene(state);
 
     const blob = new Blob([JSON.stringify(payload, null, 2)], {
       type: "application/json",
@@ -102,6 +96,32 @@ function EditorCard() {
     }
   }, [state]);
 
+  const handleCopyLink = useCallback(async () => {
+    if (typeof window === "undefined") return;
+    try {
+      const hash = await encodeSceneToHash(state);
+      const { origin, pathname, search } = window.location;
+      const base = `${origin}${pathname}${search}`;
+      const url = `${base}#${hash}`;
+      const clipboard = navigator.clipboard;
+      if (clipboard?.writeText) {
+        await clipboard.writeText(url);
+      } else {
+        const tempInput = document.createElement("textarea");
+        tempInput.value = url;
+        tempInput.setAttribute("readonly", "");
+        tempInput.style.position = "absolute";
+        tempInput.style.left = "-9999px";
+        document.body.appendChild(tempInput);
+        tempInput.select();
+        document.execCommand("copy");
+        document.body.removeChild(tempInput);
+      }
+    } catch (err) {
+      console.error("Failed to copy link", err);
+    }
+  }, [state]);
+
   const handleLoad = useCallback(() => {
     fileInputRef.current?.click();
   }, []);
@@ -109,39 +129,49 @@ function EditorCard() {
   const handleDownloadSvg = useCallback(async () => {
     if (!state.svgString) return;
 
-    try {
-      // Modern browsers: use native Save dialog
-      if ((window as any).showSaveFilePicker) {
-        const handle = await (window as any).showSaveFilePicker({
-          suggestedName: "tree-dangler.svg",
-          types: [
-            {
-              description: "SVG Image",
-              accept: { "image/svg+xml": [".svg"] },
-            },
-          ],
-        });
+    const handle = await (window as any).showSaveFilePicker({
+      suggestedName: "tree-dangler.svg",
+      types: [
+        {
+          description: "SVG Image",
+          accept: { "image/svg+xml": [".svg"] },
+        },
+      ],
+    });
 
-        const writable = await handle.createWritable();
-        await writable.write(
-          new Blob([state.svgString], { type: "image/svg+xml" })
-        );
-        await writable.close();
-        return;
-      }
-    } catch (err) {
-      console.error("Save dialog failed, falling back", err);
-    }
-
-    // Fallback: force download
-    const blob = new Blob([state.svgString], { type: "image/svg+xml" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = "tree-dangler.svg";
-    link.click();
-    URL.revokeObjectURL(url);
+    const writable = await handle.createWritable();
+    await writable.write(
+      new Blob([state.svgString], { type: "image/svg+xml" })
+    );
+    await writable.close();
+    return;
   }, [state.svgString]);
+
+  const applySerializedScene = useCallback(
+    (scene: ReturnType<typeof deserializeScene>) => {
+      if (!scene) return;
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new Event(EXTERNAL_UNDO_EVENT));
+      }
+      dispatch({ type: "SET_MASK", payload: scene.mask });
+      dispatch({ type: "SET_SEGMENTS", payload: scene.segments });
+      dispatch({ type: "SET_CONNECTORS", payload: scene.connectors });
+      dispatch({
+        type: "SET_DISTANCE_CONFIG",
+        payload: {
+          gap: scene.noise.gap,
+          round: scene.noise.round,
+          noiseAmplitude: scene.noise.noiseAmplitude,
+          noiseSeed: scene.noise.noiseSeed,
+        },
+      });
+      dispatch({
+        type: "SET_CONNECTOR_LENGTH",
+        payload: scene.noise.connectorLength,
+      });
+    },
+    [dispatch]
+  );
 
   const handleFileChange = useCallback(
     (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -151,73 +181,11 @@ function EditorCard() {
       reader.onload = () => {
         try {
           const data = JSON.parse(reader.result as string);
-          if (data.mask?.points) {
-            dispatch({ type: "SET_MASK", payload: data.mask });
-          }
-          if (Array.isArray(data.segments)) {
-            dispatch({ type: "SET_SEGMENTS", payload: data.segments });
-          }
-          if (Array.isArray(data.connectors)) {
-            dispatch({ type: "SET_CONNECTORS", payload: data.connectors });
-          }
-          if (data.noise) {
-            const {
-              shrinkThreshold,
-              growThreshold,
-              round,
-              gap,
-              noiseAmplitude,
-              noiseSeed,
-              connectorLength,
-            } = data.noise;
-            const configPatch: Partial<
-              Pick<
-                TreeDanglerState,
-                "gap" | "round" | "noiseAmplitude" | "noiseSeed"
-              >
-            > = {};
-
-            let roundMm: number | undefined;
-            if (typeof round === "number") {
-              roundMm = round;
-            } else if (typeof growThreshold === "number") {
-              roundMm = pxToMm(growThreshold);
-            }
-
-            let gapMm: number | undefined;
-            if (typeof gap === "number") {
-              gapMm = typeof round === "number" ? gap : pxToMm(gap);
-            } else if (
-              typeof shrinkThreshold === "number" &&
-              roundMm !== undefined
-            ) {
-              gapMm = pxToMm(shrinkThreshold) - roundMm;
-            }
-
-            if (roundMm !== undefined) {
-              configPatch.round = Math.max(0, roundMm);
-            }
-            if (gapMm !== undefined) {
-              configPatch.gap = Math.max(0, gapMm);
-            }
-            if (typeof noiseAmplitude === "number") {
-              configPatch.noiseAmplitude = noiseAmplitude;
-            }
-            if (typeof noiseSeed === "number") {
-              configPatch.noiseSeed = noiseSeed;
-            }
-            if (Object.keys(configPatch).length > 0) {
-              dispatch({
-                type: "SET_DISTANCE_CONFIG",
-                payload: configPatch,
-              });
-            }
-            if (typeof connectorLength === "number") {
-              dispatch({
-                type: "SET_CONNECTOR_LENGTH",
-                payload: connectorLength,
-              });
-            }
+          const scene = deserializeScene(data);
+          if (scene) {
+            applySerializedScene(scene);
+          } else {
+            console.error("Invalid scene file");
           }
         } catch (err) {
           console.error("Failed to load scene", err);
@@ -226,7 +194,7 @@ function EditorCard() {
       reader.readAsText(file);
       event.target.value = "";
     },
-    [dispatch]
+    [applySerializedScene]
   );
 
   return (
@@ -281,6 +249,13 @@ function EditorCard() {
                 </div>
               ) : null}
             </div>
+            <button
+              type="button"
+              onClick={handleCopyLink}
+              className="rounded-full border border-slate-600 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-100 transition hover:border-slate-400"
+            >
+              Copy Link
+            </button>
             <button
               type="button"
               onClick={handleSave}

@@ -14,7 +14,12 @@ import {
   Polygon,
   BinaryBitmap,
 } from "../types";
-import { mmToPx, pxToMm, resizeConnectorFromStart } from "../logic/connectors";
+import { mmToPx, resizeConnectorFromStart } from "../logic/connectors";
+import {
+  decodeSceneFromHash,
+  deserializeScene,
+  type NormalizedScene,
+} from "../logic/sceneSerialization";
 
 // Action types
 type Action =
@@ -130,88 +135,107 @@ const TreeDanglerContext = createContext<TreeDanglerContextValue | undefined>(
   undefined
 );
 
+function applyScene(
+  scene: NormalizedScene,
+  dispatch: Dispatch<Action>,
+  opts?: { suppressHistory?: boolean }
+) {
+  dispatch({
+    type: "SET_MASK",
+    payload: scene.mask,
+  });
+  dispatch({ type: "SET_SEGMENTS", payload: scene.segments });
+  dispatch({ type: "SET_CONNECTORS", payload: scene.connectors });
+  dispatch({
+    type: "SET_DISTANCE_CONFIG",
+    payload: {
+      gap: scene.noise.gap,
+      round: scene.noise.round,
+      noiseAmplitude: scene.noise.noiseAmplitude,
+      noiseSeed: scene.noise.noiseSeed,
+    },
+  });
+  dispatch({
+    type: "SET_CONNECTOR_LENGTH",
+    payload: scene.noise.connectorLength,
+  });
+  if (!opts?.suppressHistory && typeof window !== "undefined") {
+    window.dispatchEvent(new Event("tree-dangler-push-undo"));
+  }
+}
+
 // Provider component
 export function TreeDanglerProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(reducer, initialState);
 
-  // Auto-load default scene from packaged JSON
+  // Auto-load default scene from packaged JSON or URL hash
   useEffect(() => {
-    fetch("/default_scene.json")
-      .then((resp) => resp.json())
-      .then((data) => {
-        if (data.mask?.points) {
-          dispatch({ type: "SET_MASK", payload: data.mask });
-        }
-        if (Array.isArray(data.segments)) {
-          dispatch({ type: "SET_SEGMENTS", payload: data.segments });
-        }
-        if (Array.isArray(data.connectors)) {
-          dispatch({ type: "SET_CONNECTORS", payload: data.connectors });
-        }
-        if (data.noise) {
-          const {
-            shrinkThreshold,
-            growThreshold,
-            round,
-            gap,
-            noiseAmplitude,
-            noiseSeed,
-            connectorLength,
-          } = data.noise;
-          const configPatch: Partial<
-            Pick<
-              TreeDanglerState,
-              "gap" | "round" | "noiseAmplitude" | "noiseSeed"
-            >
-          > = {};
-
-          let roundMm: number | undefined;
-          if (typeof round === "number") {
-            roundMm = round;
-          } else if (typeof growThreshold === "number") {
-            roundMm = pxToMm(growThreshold);
-          }
-
-          let gapMm: number | undefined;
-          if (typeof gap === "number") {
-            gapMm = typeof round === "number" ? gap : pxToMm(gap);
-          } else if (
-            typeof shrinkThreshold === "number" &&
-            roundMm !== undefined
-          ) {
-            gapMm = pxToMm(shrinkThreshold) - roundMm;
-          }
-
-          if (roundMm !== undefined) {
-            configPatch.round = Math.max(0, roundMm);
-          }
-          if (gapMm !== undefined) {
-            configPatch.gap = Math.max(0, gapMm);
-          }
-          if (typeof noiseAmplitude === "number") {
-            configPatch.noiseAmplitude = noiseAmplitude;
-          }
-          if (typeof noiseSeed === "number") {
-            configPatch.noiseSeed = noiseSeed;
-          }
-          if (Object.keys(configPatch).length > 0) {
-            dispatch({
-              type: "SET_DISTANCE_CONFIG",
-              payload: configPatch,
-            });
-          }
-          if (typeof connectorLength === "number") {
-            dispatch({
-              type: "SET_CONNECTOR_LENGTH",
-              payload: connectorLength,
-            });
+    let cancelled = false;
+    const bootstrap = async () => {
+      if (typeof window !== "undefined") {
+        const hashValue = window.location.hash.slice(1);
+        if (hashValue) {
+          const decoded = await decodeSceneFromHash(hashValue);
+          if (decoded && !cancelled) {
+            applyScene(decoded, dispatch, { suppressHistory: true });
+            if (window.history?.replaceState) {
+              window.history.replaceState(null, "", window.location.pathname + window.location.search);
+            } else {
+              window.location.hash = "";
+            }
+            return;
           }
         }
-      })
-      .catch((err) => {
+      }
+      try {
+        const resp = await fetch("/default_scene.json");
+        const raw = await resp.json();
+        const normalized = deserializeScene({
+          mask: raw.mask,
+          segments: raw.segments,
+          connectors: raw.connectors,
+          noise: raw.noise ?? {},
+        });
+        if (normalized && !cancelled) {
+          applyScene(normalized, dispatch, { suppressHistory: true });
+        }
+      } catch (err) {
         console.error("Failed to load default scene", err);
-      });
+      }
+    };
+    void bootstrap();
+    return () => {
+      cancelled = true;
+    };
   }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return undefined;
+    const handleHashChange = () => {
+      const run = async () => {
+        const hashValue = window.location.hash.slice(1);
+        if (!hashValue) return;
+        const decoded = await decodeSceneFromHash(hashValue);
+        if (decoded) {
+          applyScene(decoded, dispatch);
+          if (window.history?.replaceState) {
+            window.history.replaceState(
+              null,
+              "",
+              window.location.pathname + window.location.search
+            );
+          } else {
+            window.location.hash = "";
+          }
+        }
+      };
+      void run();
+    };
+    window.addEventListener("hashchange", handleHashChange);
+    return () => {
+      window.removeEventListener("hashchange", handleHashChange);
+    };
+  }, [dispatch]);
 
   const gapPx = mmToPx(state.gap);
   const roundPx = mmToPx(state.round);
