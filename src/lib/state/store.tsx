@@ -179,7 +179,11 @@ export function TreeDanglerProvider({ children }: { children: ReactNode }) {
           if (decoded && !cancelled) {
             applyScene(decoded, dispatch, { suppressHistory: true });
             if (window.history?.replaceState) {
-              window.history.replaceState(null, "", window.location.pathname + window.location.search);
+              window.history.replaceState(
+                null,
+                "",
+                window.location.pathname + window.location.search
+              );
             } else {
               window.location.hash = "";
             }
@@ -188,7 +192,7 @@ export function TreeDanglerProvider({ children }: { children: ReactNode }) {
         }
       }
       try {
-        const resp = await fetch("/default_scene.json");
+        const resp = await fetch("default_scene.json");
         const raw = await resp.json();
         const normalized = deserializeScene({
           mask: raw.mask,

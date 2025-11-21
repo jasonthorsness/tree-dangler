@@ -4,7 +4,6 @@ import { SimulationPane } from "../lib/panes/SimulationPane";
 import { SvgExportPane } from "../lib/panes/SvgExportPane";
 import EditorPane, { EXTERNAL_UNDO_EVENT } from "../lib/panes/EditorPane";
 import { TreeDanglerProvider, useTreeDanglerState } from "../lib/state/store";
-import type { TreeDanglerState } from "../lib/types";
 import { mmToPx } from "../lib/logic/connectors";
 import {
   deserializeScene,
@@ -203,7 +202,7 @@ function EditorCard() {
         <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:gap-6">
           <div className="flex flex-col gap-1">
             <p className="text-xs font-semibold uppercase tracking-[0.4em]">
-              Ornament Editor
+              Tree Dangler
             </p>
             <div className="text-xs text-slate-400">
               {state.mask.points.length} mask points · {state.segments.length}{" "}
@@ -219,7 +218,7 @@ function EditorCard() {
               >
                 Help
                 <span className="text-lg leading-none font-mono">
-                  {helpOpen ? "-" : "?"}
+                  {helpOpen ? "▲" : "▼"}
                 </span>
               </button>
               {helpOpen ? (
@@ -236,14 +235,14 @@ function EditorCard() {
                     </li>
                     <li>
                       Right-click to add connectors between segments. Rotate
-                      connectors by their points or by 90-degrees with a
+                      connectors by their points, or by 90-degrees with a
                       right-click. Change the connector length in settings.
                     </li>
                     <li>
                       Once the simulation and SVG look good, export the SVG with
                       the button to the right.
                     </li>
-                    <li>CTRL+Z to Undo, CTRL+Y to Redo. Happy dangling!</li>
+                    <li>CTRL+Z to Undo, CTRL+Y to Redo.</li>
                     <li>Happy dangling!</li>
                   </ol>
                 </div>

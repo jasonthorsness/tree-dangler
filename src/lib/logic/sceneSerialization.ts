@@ -36,7 +36,6 @@ export type NormalizedScene = {
   noise: SerializedScene["noise"];
 };
 
-const textEncoder = new TextEncoder();
 const textDecoder = new TextDecoder();
 
 const roundToTwoDecimals = (value: number) =>
@@ -107,32 +106,36 @@ export function deserializeScene(input: unknown): NormalizedScene | null {
     .filter((point): point is Point => Boolean(point));
   if (maskPoints.length < 3) return null;
 
-  const segments: LineSegment[] = data.segments
-    .map((segment) => {
+  const segments: LineSegment[] = data.segments.reduce<LineSegment[]>(
+    (acc, segment) => {
       const start = parsePoint(segment?.start);
       const end = parsePoint(segment?.end);
-      if (!start || !end) return null;
-      return {
+      if (!start || !end) return acc;
+      acc.push({
         id: crypto.randomUUID(),
         start,
         end,
-        text: typeof segment?.text === "string" ? segment.text : undefined,
-      };
-    })
-    .filter((segment): segment is LineSegment => Boolean(segment));
+        ...(typeof segment?.text === "string" ? { text: segment.text } : {}),
+      });
+      return acc;
+    },
+    []
+  );
 
-  const connectors: LineSegment[] = data.connectors
-    .map((connector) => {
+  const connectors: LineSegment[] = data.connectors.reduce<LineSegment[]>(
+    (acc, connector) => {
       const start = parsePoint(connector?.start);
       const end = parsePoint(connector?.end);
-      if (!start || !end) return null;
-      return {
+      if (!start || !end) return acc;
+      acc.push({
         id: crypto.randomUUID(),
         start,
         end,
-      };
-    })
-    .filter((connector): connector is LineSegment => Boolean(connector));
+      });
+      return acc;
+    },
+    []
+  );
 
   const { noise } = data;
   const normalizedNoise = {
@@ -217,7 +220,8 @@ const decompressToString = async (data: Uint8Array): Promise<string | null> => {
     const ds = new DecompressionStream("gzip");
 
     // Make a readable stream from the compressed bytes
-    const inputStream = new Blob([data]).stream();
+    const inputBuffer = data.slice().buffer;
+    const inputStream = new Blob([inputBuffer]).stream();
 
     // Pipe through the decompressor
     const decompressedStream = inputStream.pipeThrough(ds);
@@ -238,12 +242,9 @@ const decompressToString = async (data: Uint8Array): Promise<string | null> => {
 export async function encodeSceneToHash(
   state: TreeDanglerState
 ): Promise<string> {
-  console.log("assa");
   const serialized = serializeScene(state);
-  console.log("aasssa");
   const json = JSON.stringify(serialized);
   const compressed = await compressString(json);
-  console.log("asssa");
   return bytesToBase64Url(compressed);
 }
 
