@@ -169,7 +169,7 @@ export function SimulationPane({
           if (!pausedRef.current) {
             Matter.Engine.update(engine, 1000 / 60);
           }
-          ctx.strokeStyle = "#FFFFFF";
+          ctx.strokeStyle = "#DCEBFF";
           ctx.lineWidth = 1.5;
           const bodies = Matter.Composite.allBodies(engine.world);
 
@@ -192,16 +192,16 @@ export function SimulationPane({
               }
 
               ctx.closePath();
-              ctx.fillStyle = "#FFFFFF";
+              ctx.fillStyle = "#2262a6ff";
               ctx.fill();
-              ctx.strokeStyle = "#FFFFFF";
+              ctx.strokeStyle = "#2262a6ff";
               ctx.lineWidth = 1.5;
               ctx.stroke();
             });
           });
 
-          ctx.strokeStyle = "rgba(248, 113, 113, 0.7)";
-          ctx.lineWidth = 1;
+          ctx.strokeStyle = "#4DE2FF";
+          ctx.lineWidth = 2.4;
           const constraints = Matter.Composite.allConstraints(engine.world);
           constraints.forEach((constraint) => {
             const pointA = constraint.bodyA
@@ -229,10 +229,10 @@ export function SimulationPane({
             if (!body) return;
             ctx.beginPath();
             ctx.arc(body.position.x, body.position.y, 6, 0, Math.PI * 2);
-            ctx.fillStyle = "rgba(248, 113, 113, 0.8)";
+            ctx.fillStyle = "rgba(77, 226, 255, 0.25)";
             ctx.fill();
-            ctx.strokeStyle = "rgba(248, 113, 113, 1)";
-            ctx.lineWidth = 1;
+            ctx.strokeStyle = "#4DE2FF";
+            ctx.lineWidth = 1.6;
             ctx.stroke();
           });
         } catch (err) {

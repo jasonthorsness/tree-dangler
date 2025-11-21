@@ -44,7 +44,6 @@ let latestPending: DistanceWorkerRequest | null = null;
 ctx.addEventListener(
   "message",
   (event: MessageEvent<DistanceWorkerRequest>) => {
-    console.log("AAA");
     // Always overwrite with the latest request
     latestPending = event.data;
 

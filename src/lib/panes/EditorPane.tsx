@@ -177,7 +177,6 @@ export function EditorPane({ width, height, className }: EditorPaneProps) {
   const pushUndoSnapshot = useCallback(() => {
     redoStackRef.current = [];
     undoStackRef.current.push(cloneSnapshot());
-    console.log(undoStackRef.current.length);
   }, [cloneSnapshot]);
   const handleSliderPointerDown = useCallback(
     (event: ReactPointerEvent<HTMLInputElement>) => {
@@ -224,8 +223,6 @@ export function EditorPane({ width, height, className }: EditorPaneProps) {
     };
   }, [pushUndoSnapshot]);
   const handleUndo = useCallback(() => {
-    // log the stacj
-    console.log("ONDINE C");
     if (!undoStackRef.current.length) return;
     const current = cloneSnapshot();
     const previous = undoStackRef.current.pop()!;
@@ -243,11 +240,9 @@ export function EditorPane({ width, height, className }: EditorPaneProps) {
 
   useEffect(() => {
     const handleGlobalKeyDown = (event: globalThis.KeyboardEvent) => {
-      console.log("ASDA");
       if (!event.ctrlKey && !event.metaKey) return;
       const key = event.key.toLowerCase();
       if (key === "z") {
-        console.log("ONDINE A");
         event.preventDefault();
         handleUndo();
       } else if (key === "y") {
@@ -584,6 +579,7 @@ export function EditorPane({ width, height, className }: EditorPaneProps) {
           setLabelEditor(null);
         }
       } else {
+        pushUndoSnapshot();
         const seg = createDefaultSegmentAtPoint(mask, point);
         if (seg) {
           setSegments([...segments, seg]);
@@ -804,19 +800,16 @@ export function EditorPane({ width, height, className }: EditorPaneProps) {
       <div className="pointer-events-none absolute right-4 top-4 z-10 flex flex-col items-end gap-2">
         <button
           type="button"
-          className="pointer-events-auto inline-flex items-center gap-2 rounded-full border border-cyan-300/35 bg-[rgba(8,26,54,0.85)] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.3em] text-cyan-50 shadow-lg shadow-cyan-500/15 transition hover:border-cyan-200/70 hover:bg-[rgba(18,48,88,0.95)]"
+          className="pointer-events-auto inline-flex items-center gap-2 rounded-full border border-cyan-300/35 bg-[rgba(8,26,54,0.85)] px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.3em] text-cyan-50 shadow-lg shadow-cyan-500/15 transition hover:border-cyan-200/70 hover:bg-[rgba(18,48,88,0.95)]"
           onClick={() => setPanelOpen((prev) => !prev)}
         >
           Settings
           <span className="text-lg leading-none font-mono">
-            {panelOpen ? "-" : "+"}
+            {panelOpen ? "▲" : "▼"}
           </span>
         </button>
         {panelOpen ? (
           <div className="pointer-events-auto w-64 rounded-2xl border border-cyan-300/30 bg-[rgba(4,12,28,0.95)] p-4 text-xs text-[var(--ink)] shadow-2xl backdrop-blur">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.4em] text-cyan-100/70">
-              Mask Noise
-            </p>
             <div className="mt-3 space-y-3">
               <label className="flex flex-col gap-1">
                 <span className="flex items-center justify-between text-[11px] uppercase tracking-[0.3em] text-cyan-100/70">

@@ -72,6 +72,8 @@ export function generateSVG(
 ): string {
   const svgWidth = pxToMm(width);
   const svgHeight = pxToMm(height);
+  const primaryStroke = "#4DE2FF"; // cyan accent
+  const secondaryStroke = "#7E6CFF"; // indigo accent
 
   const polygonPaths = polygons
     .map((polygon) => {
@@ -90,7 +92,7 @@ export function generateSVG(
           point.y
         ).toFixed(
           2
-        )}" r="${HOLE_RADIUS_MM}" fill="none" stroke="red" stroke-width="0.1" />`
+        )}" r="${HOLE_RADIUS_MM}" fill="none" stroke="${secondaryStroke}" stroke-width="0.18" />`
     )
     .join("\n");
 
@@ -113,7 +115,7 @@ export function generateSVG(
         : "";
       return `<text x="${pxToMm(midX).toFixed(2)}" y="${pxToMm(midY).toFixed(
         2
-      )}" fill="blue" text-anchor="middle" dominant-baseline="middle" transform="rotate(${rotate.toFixed(
+      )}" fill="${secondaryStroke}" text-anchor="middle" dominant-baseline="middle" transform="rotate(${rotate.toFixed(
         2
       )} ${pxToMm(midX).toFixed(2)} ${pxToMm(midY).toFixed(
         2
@@ -123,7 +125,9 @@ export function generateSVG(
 
   return `
 <svg xmlns="http://www.w3.org/2000/svg" width="${svgWidth}mm" height="${svgHeight}mm" viewBox="0 0 ${svgWidth} ${svgHeight}" style="background: transparent">
-  <g fill="none" stroke="red" stroke-width="${pxToMm(0.5).toFixed(2)}">
+  <g fill="none" stroke="${primaryStroke}" stroke-width="${pxToMm(0.5).toFixed(
+    2
+  )}">
     ${polygonPaths}
   </g>
   ${holes}

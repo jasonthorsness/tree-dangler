@@ -330,7 +330,7 @@ function EditorCard() {
             <div className="flex justify-center">
               <div className="relative w-full max-w-[600px]">
                 <div className="pointer-events-none absolute left-4 top-4 z-10">
-                  <div className="pointer-events-auto inline-flex items-center gap-1 rounded-full border border-cyan-300/35 bg-[rgba(8,26,54,0.85)] p-1 text-[11px] font-semibold uppercase tracking-[0.3em] text-cyan-50 shadow-lg shadow-cyan-500/15">
+                  <div className="pointer-events-auto inline-flex items-center gap-1 rounded-full border border-cyan-300/35 bg-[rgba(8,26,54,0.85)] p-[3px] text-[11px] font-semibold uppercase tracking-[0.3em] text-cyan-50 shadow-lg shadow-cyan-500/15">
                     <button
                       type="button"
                       onClick={() => setPreviewMode("simulation")}
@@ -368,7 +368,7 @@ function EditorCard() {
                 ) : (
                   <div className="rounded-2xl border border-cyan-300/25 w-full aspect-[3/4] bg-[rgba(4,12,28,0.9)] shadow-2xl shadow-cyan-500/10">
                     <SvgExportPane
-                      className="h-full w-full overflow-auto p-4"
+                      className="h-full w-full overflow-auto p-0"
                       showDownload={false}
                     />
                   </div>
