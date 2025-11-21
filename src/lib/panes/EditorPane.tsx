@@ -120,6 +120,13 @@ export function EditorPane({ width, height, className }: EditorPaneProps) {
     u: number;
     v: number;
   } | null>(null);
+  const [backgroundImage, setBackgroundImage] = useState<{
+    url: string;
+    image: HTMLImageElement;
+    width: number;
+    height: number;
+  } | null>(null);
+  const backgroundUrlRef = useRef<string | null>(null);
 
   const pxLength = mmToPx(connectorLength);
 
@@ -254,10 +261,80 @@ export function EditorPane({ width, height, className }: EditorPaneProps) {
     return () => window.removeEventListener("keydown", handleGlobalKeyDown);
   }, [handleRedo, handleUndo]);
 
+  useEffect(() => {
+    const handlePaste = (event: ClipboardEvent) => {
+      const clipboard = event.clipboardData;
+      if (!clipboard) return;
+      const items = clipboard.items;
+      let file: File | null = null;
+      for (let i = 0; i < items.length; i += 1) {
+        const item = items[i];
+        if (item.kind === "file" && item.type.startsWith("image/")) {
+          file = item.getAsFile();
+          break;
+        }
+      }
+      if (!file && clipboard.files?.length) {
+        file =
+          Array.from(clipboard.files).find((entry) =>
+            entry.type.startsWith("image/")
+          ) ?? null;
+      }
+      if (!file) return;
+      event.preventDefault();
+      const url = URL.createObjectURL(file);
+      const img = new Image();
+      img.onload = () => {
+        if (backgroundUrlRef.current) {
+          URL.revokeObjectURL(backgroundUrlRef.current);
+        }
+        backgroundUrlRef.current = url;
+        setBackgroundImage({
+          url,
+          image: img,
+          width: img.naturalWidth,
+          height: img.naturalHeight,
+        });
+      };
+      img.onerror = () => {
+        URL.revokeObjectURL(url);
+      };
+      img.src = url;
+    };
+    window.addEventListener("paste", handlePaste);
+    return () => {
+      window.removeEventListener("paste", handlePaste);
+      if (backgroundUrlRef.current) {
+        URL.revokeObjectURL(backgroundUrlRef.current);
+      }
+    };
+  }, []);
+
   const drawPane = useCallback(
     (ctx: CanvasRenderingContext2D) => {
       ctx.fillStyle = "#020617";
       ctx.fillRect(0, 0, width, height);
+
+      if (backgroundImage) {
+        const scale = Math.min(
+          width / backgroundImage.width,
+          height / backgroundImage.height
+        );
+        const drawWidth = backgroundImage.width * scale;
+        const drawHeight = backgroundImage.height * scale;
+        const offsetX = (width - drawWidth) / 2;
+        const offsetY = (height - drawHeight) / 2;
+        ctx.save();
+        ctx.globalAlpha = 0.9;
+        ctx.drawImage(
+          backgroundImage.image,
+          offsetX,
+          offsetY,
+          drawWidth,
+          drawHeight
+        );
+        ctx.restore();
+      }
 
       if (piecePolygons.length) {
         ctx.fillStyle = "rgba(148, 163, 184, 0.05)";
@@ -436,6 +513,7 @@ export function EditorPane({ width, height, className }: EditorPaneProps) {
       selectedSegmentId,
       height,
       width,
+      backgroundImage,
     ]
   );
 
@@ -920,6 +998,23 @@ export function EditorPane({ width, height, className }: EditorPaneProps) {
           </div>
         ) : null}
       </div>
+      {backgroundImage ? (
+        <div className="pointer-events-none absolute bottom-4 right-4 z-10">
+          <button
+            type="button"
+            className="pointer-events-auto inline-flex items-center gap-2 rounded-full border border-cyan-300/35 bg-[rgba(4,12,28,0.9)] px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.3em] text-cyan-50 shadow-lg shadow-cyan-500/15 transition hover:border-cyan-200/70 hover:bg-[rgba(12,32,64,0.95)]"
+            onClick={() => {
+              if (backgroundUrlRef.current) {
+                URL.revokeObjectURL(backgroundUrlRef.current);
+                backgroundUrlRef.current = null;
+              }
+              setBackgroundImage(null);
+            }}
+          >
+            Remove background
+          </button>
+        </div>
+      ) : null}
       {labelEditor && editorPosition ? (
         <input
           autoFocus
