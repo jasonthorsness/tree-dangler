@@ -2,10 +2,48 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { SimulationPane } from "../lib/panes/SimulationPane";
 import { SvgExportPane } from "../lib/panes/SvgExportPane";
-import EditorPane from "../lib/panes/EditorPane";
+import EditorPane, { EXTERNAL_UNDO_EVENT } from "../lib/panes/EditorPane";
 import { TreeDanglerProvider, useTreeDanglerState } from "../lib/state/store";
 import type { TreeDanglerState } from "../lib/types";
-import { pxToMm } from "../lib/logic/connectors";
+import { mmToPx, pxToMm } from "../lib/logic/connectors";
+
+const CLEAR_MASK_POINTS = [
+  { x: mmToPx(60), y: mmToPx(30) },
+  { x: mmToPx(20), y: mmToPx(100) },
+  { x: mmToPx(100), y: mmToPx(100) },
+];
+
+const CLEAR_CONNECTOR_CENTER = { x: mmToPx(60), y: mmToPx(32) };
+const CLEAR_SEGMENT_CENTER = { x: mmToPx(60), y: mmToPx(60) };
+const DEFAULT_SEGMENT_HALF_LENGTH = 20;
+
+const createClearSegment = () => ({
+  id: crypto.randomUUID(),
+  start: {
+    x: CLEAR_SEGMENT_CENTER.x - DEFAULT_SEGMENT_HALF_LENGTH,
+    y: CLEAR_SEGMENT_CENTER.y,
+  },
+  end: {
+    x: CLEAR_SEGMENT_CENTER.x + DEFAULT_SEGMENT_HALF_LENGTH,
+    y: CLEAR_SEGMENT_CENTER.y,
+  },
+  text: "text",
+});
+
+const createClearConnector = (connectorLengthMm: number) => {
+  const halfLengthPx = mmToPx(connectorLengthMm) / 2;
+  return {
+    id: crypto.randomUUID(),
+    start: {
+      x: CLEAR_CONNECTOR_CENTER.x,
+      y: CLEAR_CONNECTOR_CENTER.y - halfLengthPx,
+    },
+    end: {
+      x: CLEAR_CONNECTOR_CENTER.x,
+      y: CLEAR_CONNECTOR_CENTER.y + halfLengthPx,
+    },
+  };
+};
 
 function EditorCard() {
   const width = 600;
@@ -15,6 +53,7 @@ function EditorCard() {
   const [previewMode, setPreviewMode] = useState<"simulation" | "svg">(
     "simulation"
   );
+  const [helpOpen, setHelpOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
@@ -204,6 +243,44 @@ function EditorCard() {
             </div>
           </div>
           <div className="flex flex-wrap gap-2 sm:ml-auto sm:justify-end">
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setHelpOpen((prev) => !prev)}
+                className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-slate-900/80 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.3em] text-slate-100 shadow-lg backdrop-blur transition hover:border-white/30"
+              >
+                Help
+                <span className="text-lg leading-none font-mono">
+                  {helpOpen ? "-" : "?"}
+                </span>
+              </button>
+              {helpOpen ? (
+                <div className="absolute left-0 top-full z-20 mt-2 w-72 rounded-2xl border border-white/10 bg-slate-950 p-4 text-xs text-slate-200 shadow-2xl backdrop-blur">
+                  <ol className="mt-3 space-y-3 list-decimal pl-4 text-left text-[12px] leading-relaxed text-slate-200">
+                    <li>
+                      Define the overall shape using the green outline. To add a
+                      new point, click on a line.
+                    </li>
+                    <li>
+                      Left-click to add a segment. Double-click to change the
+                      text label. Drag points to rotate or elongate. Adjust
+                      settings to alter the look of the generated pieces.
+                    </li>
+                    <li>
+                      Right-click to add connectors between segments. Rotate
+                      connectors by their points or by 90-degrees with a
+                      right-click. Change the connector length in settings.
+                    </li>
+                    <li>
+                      Once the simulation and SVG look good, export the SVG with
+                      the button to the right.
+                    </li>
+                    <li>CTRL+Z to Undo, CTRL+Y to Redo. Happy dangling!</li>
+                    <li>Happy dangling!</li>
+                  </ol>
+                </div>
+              ) : null}
+            </div>
             <button
               type="button"
               onClick={handleSave}
@@ -228,19 +305,27 @@ function EditorCard() {
             <button
               type="button"
               onClick={() => {
+                if (typeof window !== "undefined") {
+                  window.dispatchEvent(new Event(EXTERNAL_UNDO_EVENT));
+                }
+                const maskPayload = {
+                  id: "default-mask",
+                  points: CLEAR_MASK_POINTS.map((point) => ({ ...point })),
+                };
+                const clearSegment = createClearSegment();
+                const clearConnector = createClearConnector(
+                  state.connectorLength
+                );
                 dispatch({
                   type: "SET_MASK",
-                  payload: {
-                    id: "default-mask",
-                    points: [
-                      { x: 200, y: 100 },
-                      { x: 100, y: 300 },
-                      { x: 300, y: 300 },
-                    ],
-                  },
+                  payload: maskPayload,
                 });
-                dispatch({ type: "SET_SEGMENTS", payload: [] });
-                dispatch({ type: "SET_CONNECTORS", payload: [] });
+                dispatch({ type: "SET_SEGMENTS", payload: [clearSegment] });
+                dispatch({ type: "SET_CONNECTORS", payload: [clearConnector] });
+                dispatch({
+                  type: "SET_DISTANCE_CONFIG",
+                  payload: { gap: 1.5, round: 2, noiseAmplitude: 3 },
+                });
               }}
               className="rounded-full border border-rose-600 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-rose-100 transition hover:border-rose-400"
             >

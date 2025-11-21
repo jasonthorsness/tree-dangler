@@ -1,10 +1,14 @@
 import {
   useCallback,
+  useEffect,
   useMemo,
   useRef,
   useState,
-  type KeyboardEvent,
+  type KeyboardEvent as ReactKeyboardEvent,
+  type PointerEvent as ReactPointerEvent,
 } from "react";
+
+export const EXTERNAL_UNDO_EVENT = "tree-dangler-push-undo";
 
 import { useTreeDanglerState } from "../state/store";
 import { CanvasPane, type PointerEventData } from "../ui/CanvasPane";
@@ -58,7 +62,26 @@ type EditorSnapshot = {
   mask: MaskPolygon;
   segments: LineSegment[];
   connectors: LineSegment[];
+  gap: number;
+  round: number;
+  noiseAmplitude: number;
+  noiseSeed: number;
+  connectorLength: number;
 };
+
+function rotateConnectorNinetyDegrees(segment: LineSegment): LineSegment {
+  const midX = (segment.start.x + segment.end.x) / 2;
+  const midY = (segment.start.y + segment.end.y) / 2;
+  const dx = segment.end.x - segment.start.x;
+  const dy = segment.end.y - segment.start.y;
+  const rotatedDx = -dy;
+  const rotatedDy = dx;
+  return {
+    ...segment,
+    start: { x: midX - rotatedDx / 2, y: midY - rotatedDy / 2 },
+    end: { x: midX + rotatedDx / 2, y: midY + rotatedDy / 2 },
+  };
+}
 
 export function EditorPane({ width, height, className }: EditorPaneProps) {
   const {
@@ -88,8 +111,7 @@ export function EditorPane({ width, height, className }: EditorPaneProps) {
     id: string;
     value: string;
   } | null>(null);
-  const [panelOpen, setPanelOpen] = useState(true);
-  const [helpOpen, setHelpOpen] = useState(false);
+  const [panelOpen, setPanelOpen] = useState(false);
   const [lastClick, setLastClick] = useState<{
     id: string;
     timestamp: number;
@@ -136,14 +158,53 @@ export function EditorPane({ width, height, className }: EditorPaneProps) {
       mask: { ...mask, points: clonePoints(mask.points) },
       segments: cloneSegments(segments),
       connectors: cloneSegments(connectors),
+      gap,
+      round,
+      noiseAmplitude,
+      noiseSeed,
+      connectorLength,
     };
-  }, [mask, segments, connectors]);
+  }, [
+    mask,
+    segments,
+    connectors,
+    gap,
+    round,
+    noiseAmplitude,
+    noiseSeed,
+    connectorLength,
+  ]);
+  const pushUndoSnapshot = useCallback(() => {
+    redoStackRef.current = [];
+    undoStackRef.current.push(cloneSnapshot());
+    console.log(undoStackRef.current.length);
+  }, [cloneSnapshot]);
+  const handleSliderPointerDown = useCallback(
+    (event: ReactPointerEvent<HTMLInputElement>) => {
+      if (event.button !== 0) return;
+      pushUndoSnapshot();
+    },
+    [pushUndoSnapshot]
+  );
 
   const restoreSnapshot = useCallback(
     (snapshot: EditorSnapshot) => {
       dispatch({ type: "SET_MASK", payload: snapshot.mask });
       dispatch({ type: "SET_SEGMENTS", payload: snapshot.segments });
       dispatch({ type: "SET_CONNECTORS", payload: snapshot.connectors });
+      dispatch({
+        type: "SET_DISTANCE_CONFIG",
+        payload: {
+          gap: snapshot.gap,
+          round: snapshot.round,
+          noiseAmplitude: snapshot.noiseAmplitude,
+          noiseSeed: snapshot.noiseSeed,
+        },
+      });
+      dispatch({
+        type: "SET_CONNECTOR_LENGTH",
+        payload: snapshot.connectorLength,
+      });
       setSelectedSegmentId(null);
       setSelectedConnectorId(null);
       setMaskSelection(null);
@@ -153,7 +214,18 @@ export function EditorPane({ width, height, className }: EditorPaneProps) {
     [dispatch]
   );
 
+  useEffect(() => {
+    const handleExternalSnapshot = () => {
+      pushUndoSnapshot();
+    };
+    window.addEventListener(EXTERNAL_UNDO_EVENT, handleExternalSnapshot);
+    return () => {
+      window.removeEventListener(EXTERNAL_UNDO_EVENT, handleExternalSnapshot);
+    };
+  }, [pushUndoSnapshot]);
   const handleUndo = useCallback(() => {
+    // log the stacj
+    console.log("ONDINE C");
     if (!undoStackRef.current.length) return;
     const current = cloneSnapshot();
     const previous = undoStackRef.current.pop()!;
@@ -168,6 +240,24 @@ export function EditorPane({ width, height, className }: EditorPaneProps) {
     undoStackRef.current.push(current);
     restoreSnapshot(next);
   }, [cloneSnapshot, restoreSnapshot]);
+
+  useEffect(() => {
+    const handleGlobalKeyDown = (event: globalThis.KeyboardEvent) => {
+      console.log("ASDA");
+      if (!event.ctrlKey && !event.metaKey) return;
+      const key = event.key.toLowerCase();
+      if (key === "z") {
+        console.log("ONDINE A");
+        event.preventDefault();
+        handleUndo();
+      } else if (key === "y") {
+        event.preventDefault();
+        handleRedo();
+      }
+    };
+    window.addEventListener("keydown", handleGlobalKeyDown);
+    return () => window.removeEventListener("keydown", handleGlobalKeyDown);
+  }, [handleRedo, handleUndo]);
 
   const drawPane = useCallback(
     (ctx: CanvasRenderingContext2D) => {
@@ -358,10 +448,6 @@ export function EditorPane({ width, height, className }: EditorPaneProps) {
     (event: PointerEventData) => {
       const point = { x: event.x, y: event.y };
       const isRightClick = event.buttons === 2;
-      redoStackRef.current = [];
-      if (event.buttons === 1) {
-        undoStackRef.current.push(cloneSnapshot());
-      }
 
       // Mask point?
       const maskIdx = hitTestMaskPoint(mask, point, 12);
@@ -376,6 +462,7 @@ export function EditorPane({ width, height, className }: EditorPaneProps) {
       // Mask edge insert
       const maskSegIdx = hitTestMaskSegment(mask, point, 10);
       if (maskSegIdx !== -1) {
+        pushUndoSnapshot();
         const updated = insertPointIntoSegment(mask, maskSegIdx, point);
         dispatch({ type: "SET_MASK", payload: updated });
         setMaskSelection(maskSegIdx + 1);
@@ -410,6 +497,14 @@ export function EditorPane({ width, height, className }: EditorPaneProps) {
       const connectorEndpoint = hitTestConnectorEndpoint(connectors, point);
       if (connectorEndpoint) {
         const connector = connectors[connectorEndpoint.segmentIndex];
+        if (isRightClick) {
+          pushUndoSnapshot();
+          const rotated = rotateConnectorNinetyDegrees(connector);
+          const next = connectors.slice();
+          next[connectorEndpoint.segmentIndex] = rotated;
+          setConnectors(next);
+          return;
+        }
         setSelectedConnectorId(connector.id);
         setSelectedSegmentId(null);
         setMaskSelection(null);
@@ -456,6 +551,14 @@ export function EditorPane({ width, height, className }: EditorPaneProps) {
       const connectorIndex = hitTestConnectorSegment(connectors, point);
       if (connectorIndex !== -1) {
         const connector = connectors[connectorIndex];
+        if (isRightClick) {
+          pushUndoSnapshot();
+          const rotated = rotateConnectorNinetyDegrees(connector);
+          const next = connectors.slice();
+          next[connectorIndex] = rotated;
+          setConnectors(next);
+          return;
+        }
         setSelectedConnectorId(connector.id);
         setSelectedSegmentId(null);
         setMaskSelection(null);
@@ -471,6 +574,7 @@ export function EditorPane({ width, height, className }: EditorPaneProps) {
 
       // Create new on click: left => segment, right => connector
       if (isRightClick) {
+        pushUndoSnapshot();
         const conn = createConnectorAtPoint(mask, point, pxLength);
         if (conn) {
           setConnectors([...connectors, conn]);
@@ -499,7 +603,7 @@ export function EditorPane({ width, height, className }: EditorPaneProps) {
       segments,
       setConnectors,
       setSegments,
-      cloneSnapshot,
+      pushUndoSnapshot,
     ]
   );
 
@@ -602,17 +706,7 @@ export function EditorPane({ width, height, className }: EditorPaneProps) {
   const clearDrag = useCallback(() => setDragInfo(null), []);
 
   const handleKeyDown = useCallback(
-    (event: KeyboardEvent<HTMLCanvasElement>) => {
-      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "z") {
-        event.preventDefault();
-        handleUndo();
-        return;
-      }
-      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "y") {
-        event.preventDefault();
-        handleRedo();
-        return;
-      }
+    (event: ReactKeyboardEvent<HTMLCanvasElement>) => {
       if (event.key !== "Delete" && event.key !== "Backspace") return;
       if (maskSelection !== null) {
         event.preventDefault();
@@ -685,12 +779,13 @@ export function EditorPane({ width, height, className }: EditorPaneProps) {
       setLabelEditor(null);
       return;
     }
+    pushUndoSnapshot();
     const next = segments.slice();
     next[index] = { ...next[index], text: labelEditor.value };
     setSegments(next);
     setLabelEditor(null);
     setLabelAnchor(null);
-  }, [labelEditor, segments, setSegments]);
+  }, [labelEditor, segments, setSegments, pushUndoSnapshot]);
 
   return (
     <div className="relative">
@@ -734,6 +829,7 @@ export function EditorPane({ width, height, className }: EditorPaneProps) {
                   max={10}
                   step={0.1}
                   value={gap}
+                  onPointerDown={handleSliderPointerDown}
                   onChange={(event) =>
                     updateDistanceConfig({
                       gap: Number(event.target.value),
@@ -753,6 +849,7 @@ export function EditorPane({ width, height, className }: EditorPaneProps) {
                   max={10}
                   step={0.1}
                   value={round}
+                  onPointerDown={handleSliderPointerDown}
                   onChange={(event) =>
                     updateDistanceConfig({
                       round: Number(event.target.value),
@@ -772,6 +869,7 @@ export function EditorPane({ width, height, className }: EditorPaneProps) {
                   max={40}
                   step={0.1}
                   value={noiseAmplitude}
+                  onPointerDown={handleSliderPointerDown}
                   onChange={(event) =>
                     updateDistanceConfig({
                       noiseAmplitude: Number(event.target.value),
@@ -789,11 +887,12 @@ export function EditorPane({ width, height, className }: EditorPaneProps) {
                   min={0}
                   step={1}
                   value={noiseSeed}
-                  onChange={(event) =>
+                  onChange={(event) => {
+                    pushUndoSnapshot();
                     updateDistanceConfig({
                       noiseSeed: Number(event.target.value),
-                    })
-                  }
+                    });
+                  }}
                   className="rounded-lg border border-white/10 bg-slate-900/80 px-2 py-1 text-slate-100"
                 />
               </label>
@@ -807,54 +906,19 @@ export function EditorPane({ width, height, className }: EditorPaneProps) {
                     min={2}
                     step={0.5}
                     value={connectorLength}
-                    onChange={(event) =>
+                    onChange={(event) => {
+                      pushUndoSnapshot();
                       dispatch({
                         type: "SET_CONNECTOR_LENGTH",
                         payload: Number(event.target.value),
-                      })
-                    }
+                      });
+                    }}
                     className="w-24 rounded-lg border border-white/10 bg-slate-900/80 px-2 py-1 text-slate-100"
                   />
                   <span className="text-slate-400">mm</span>
                 </div>
               </label>
             </div>
-          </div>
-        ) : null}
-        <button
-          type="button"
-          className="pointer-events-auto inline-flex items-center gap-2 rounded-full border border-white/10 bg-slate-900/80 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.3em] text-slate-100 shadow-lg backdrop-blur transition hover:border-white/30"
-          onClick={() => setHelpOpen((prev) => !prev)}
-        >
-          Help
-          <span className="text-lg leading-none font-mono">
-            {helpOpen ? "-" : "?"}
-          </span>
-        </button>
-        {helpOpen ? (
-          <div className="pointer-events-auto w-72 rounded-2xl border border-white/10 bg-slate-950/80 p-4 text-xs text-slate-200 shadow-2xl backdrop-blur">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.4em] text-slate-400">
-              Editor Help
-            </p>
-            <ol className="mt-3 space-y-3 list-decimal pl-4 text-left text-[12px] leading-relaxed text-slate-200">
-              <li>
-                First, define the overall shape using the outline mask (green
-                points/lines). To add a new point, click on the green dotted
-                line.
-              </li>
-              <li>
-                Next, left-click to add a segment for each separate piece of the
-                ornament. Double-click to change the text labels. Drag points to
-                rotate or elongate. Adjust the settings to alter the look of the
-                segment pieces.
-              </li>
-              <li>
-                Third, right-click to add a connector from the background to
-                your top segment. Add more connectors until all segments are
-                connected. Change the connector length in settings to match your
-                jump rings (10mm jump rings give about 8mm of connector length).
-              </li>
-            </ol>
           </div>
         ) : null}
       </div>
