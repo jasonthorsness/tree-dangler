@@ -12,7 +12,6 @@ import {
   MaskPolygon,
   LineSegment,
   Polygon,
-  BinaryBitmap,
 } from "../types";
 import { mmToPx, resizeConnectorFromStart } from "../logic/connectors";
 import {
@@ -25,22 +24,6 @@ import {
 type Action =
   | { type: "SET_MASK"; payload: MaskPolygon }
   | { type: "SET_SEGMENTS"; payload: TreeDanglerState["segments"] }
-  | {
-      type: "SET_VORONOI_POLYGONS";
-      payload: TreeDanglerState["voronoiPolygons"];
-    }
-  | { type: "SET_VORONOI_RASTER"; payload: BinaryBitmap | undefined }
-  | {
-      type: "SET_DISTANCE_FIELD";
-      payload: {
-        data?: Float32Array;
-        width?: number;
-        height?: number;
-        max?: number;
-      };
-    }
-  | { type: "SET_DISTANCE_PREVIEW"; payload: BinaryBitmap | undefined }
-  | { type: "SET_THRESHOLD_BITMAP"; payload: Uint8ClampedArray }
   | { type: "SET_PIECE_POLYGONS"; payload: TreeDanglerState["piecePolygons"] }
   | { type: "SET_CONNECTORS"; payload: TreeDanglerState["connectors"] }
   | {
@@ -56,8 +39,6 @@ type Action =
 const initialState: TreeDanglerState = {
   mask: { id: "default-mask", points: [] },
   segments: [],
-  voronoiPolygons: [],
-  voronoiRaster: undefined,
   piecePolygons: [],
   connectors: [],
   gap: 1.2,
@@ -65,7 +46,6 @@ const initialState: TreeDanglerState = {
   noiseAmplitude: 5,
   noiseSeed: 0,
   connectorLength: 8,
-  distancePreview: undefined,
   svgString: "",
 };
 
@@ -76,40 +56,12 @@ function reducer(state: TreeDanglerState, action: Action): TreeDanglerState {
       return { ...state, mask: action.payload };
     case "SET_SEGMENTS":
       return { ...state, segments: action.payload };
-    case "SET_VORONOI_POLYGONS":
-      return { ...state, voronoiPolygons: action.payload };
-    case "SET_VORONOI_RASTER":
-      return { ...state, voronoiRaster: action.payload };
-    case "SET_DISTANCE_FIELD":
-      return {
-        ...state,
-        distanceField: action.payload.data,
-        distanceFieldDimensions: action.payload.data
-          ? {
-              width:
-                action.payload.width ??
-                state.distanceFieldDimensions?.width ??
-                0,
-              height:
-                action.payload.height ??
-                state.distanceFieldDimensions?.height ??
-                0,
-            }
-          : undefined,
-        distanceFieldMax: action.payload.data
-          ? action.payload.max ?? state.distanceFieldMax
-          : undefined,
-      };
-    case "SET_THRESHOLD_BITMAP":
-      return { ...state, thresholdBitmap: action.payload };
     case "SET_PIECE_POLYGONS":
       return { ...state, piecePolygons: action.payload };
     case "SET_CONNECTORS":
       return { ...state, connectors: action.payload };
     case "SET_DISTANCE_CONFIG":
       return { ...state, ...action.payload };
-    case "SET_DISTANCE_PREVIEW":
-      return { ...state, distancePreview: action.payload };
     case "SET_SVG_STRING":
       return { ...state, svgString: action.payload };
     case "SET_CONNECTOR_LENGTH":
@@ -276,15 +228,6 @@ export function useTreeDanglerState() {
 
 interface VoronoiWorkerMessage {
   id: number;
-  polygons?: Polygon[];
-  voronoiRaster?: BinaryBitmap;
-  distanceField?: {
-    data: Float32Array;
-    width: number;
-    height: number;
-    max: number;
-  };
-  distancePreview?: BinaryBitmap;
   piecePolygons?: Polygon[];
   svgString?: string;
   error?: string;
@@ -318,10 +261,6 @@ function useWorker(
     worker.onmessage = (event: MessageEvent<VoronoiWorkerMessage>) => {
       const {
         id,
-        polygons,
-        voronoiRaster,
-        distanceField,
-        distancePreview,
         piecePolygons,
         svgString,
         error,
@@ -334,22 +273,6 @@ function useWorker(
         return;
       }
       latestCompletedRef.current = id;
-      dispatch({ type: "SET_VORONOI_POLYGONS", payload: polygons ?? [] });
-      dispatch({ type: "SET_VORONOI_RASTER", payload: voronoiRaster });
-      if (distanceField) {
-        dispatch({
-          type: "SET_DISTANCE_FIELD",
-          payload: {
-            data: distanceField.data,
-            width: distanceField.width,
-            height: distanceField.height,
-            max: distanceField.max,
-          },
-        });
-      } else {
-        dispatch({ type: "SET_DISTANCE_FIELD", payload: {} });
-      }
-      dispatch({ type: "SET_DISTANCE_PREVIEW", payload: distancePreview });
       dispatch({ type: "SET_PIECE_POLYGONS", payload: piecePolygons ?? [] });
       dispatch({ type: "SET_SVG_STRING", payload: svgString ?? "" });
     };

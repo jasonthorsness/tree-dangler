@@ -29,19 +29,8 @@ interface WorkerRequest {
   spacing?: number;
 }
 
-interface WorkerDistanceField {
-  data: Float32Array;
-  width: number;
-  height: number;
-  max: number;
-}
-
 interface WorkerResponse {
   id: number;
-  polygons?: Polygon[];
-  voronoiRaster?: BinaryBitmap;
-  distanceField?: WorkerDistanceField;
-  distancePreview?: BinaryBitmap;
   piecePolygons?: Polygon[];
   svgString?: string;
   error?: string;
@@ -92,10 +81,6 @@ function runNextComputation() {
       if (!polygons.length) {
         ctx.postMessage({
           id,
-          polygons: [],
-          voronoiRaster: undefined,
-          distanceField: undefined,
-          distancePreview: undefined,
           piecePolygons: [],
           svgString: "",
         } satisfies WorkerResponse);
@@ -111,10 +96,6 @@ function runNextComputation() {
       if (!maskBitmap) {
         ctx.postMessage({
           id,
-          polygons,
-          voronoiRaster: undefined,
-          distanceField: undefined,
-          distancePreview: undefined,
           piecePolygons: [],
           svgString: "",
         } satisfies WorkerResponse);
@@ -209,15 +190,6 @@ function runNextComputation() {
 
       ctx.postMessage({
         id,
-        polygons,
-        voronoiRaster: maskBitmap,
-        distanceField: {
-          data: inward.field,
-          width,
-          height,
-          max: inward.maxDistance,
-        },
-        distancePreview: previewBitmap,
         piecePolygons: tracedPolygons,
         svgString: svgOutput,
       } satisfies WorkerResponse);

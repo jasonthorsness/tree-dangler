@@ -1,30 +1,6 @@
 export const PX_PER_MM = 5
 export const PX_PER_CM = PX_PER_MM * 10
 
-export function drawMetricBackground(ctx: CanvasRenderingContext2D, width: number, height: number) {
-  ctx.save()
-  ctx.fillStyle = '#020617'
-  ctx.fillRect(0, 0, width, height)
-
-  ctx.strokeStyle = 'rgba(148, 163, 184, 0.12)'
-  ctx.lineWidth = 1
-
-  for (let x = 0; x <= width; x += PX_PER_CM) {
-    ctx.beginPath()
-    ctx.moveTo(x, 0)
-    ctx.lineTo(x, height)
-    ctx.stroke()
-  }
-
-  for (let y = 0; y <= height; y += PX_PER_CM) {
-    ctx.beginPath()
-    ctx.moveTo(0, y)
-    ctx.lineTo(width, y)
-    ctx.stroke()
-  }
-  ctx.restore()
-}
-
 export function drawMetricRulers(ctx: CanvasRenderingContext2D, width: number, height: number) {
   ctx.save()
   const rulerThickness = 28
@@ -69,9 +45,4 @@ export function drawMetricRulers(ctx: CanvasRenderingContext2D, width: number, h
     }
   }
   ctx.restore()
-}
-
-export function drawMetricGrid(ctx: CanvasRenderingContext2D, width: number, height: number) {
-  drawMetricBackground(ctx, width, height)
-  drawMetricRulers(ctx, width, height)
 }

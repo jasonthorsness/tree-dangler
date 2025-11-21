@@ -18,27 +18,9 @@ export interface Polygon {
 
 export type MaskPolygon = Polygon;
 
-export interface Connector {
-  id: string;
-  a: Point;       // endpoint in world coordinates
-  b: Point;       // endpoint in world coordinates
-  length: number; // fixed length
-  attachments: {
-    endpoint: "a" | "b";
-    polygonId: string;
-    localPoint: Point; // polygon-local or world with a flag
-  }[];
-}
-
 export interface TreeDanglerState {
   mask: MaskPolygon;
   segments: LineSegment[];
-  voronoiPolygons: Polygon[];
-  voronoiRaster?: BinaryBitmap;
-  distanceField?: Float32Array;
-  distanceFieldDimensions?: { width: number; height: number };
-  distanceFieldMax?: number;
-  thresholdBitmap?: Uint8ClampedArray;
   piecePolygons: Polygon[];
   connectors: LineSegment[];
   // UI-level config
@@ -47,7 +29,6 @@ export interface TreeDanglerState {
   noiseAmplitude: number;
   noiseSeed: number;
   connectorLength: number;
-  distancePreview?: BinaryBitmap;
   svgString?: string;
 }
 
