@@ -129,6 +129,7 @@ export function EditorPane({ width, height, className }: EditorPaneProps) {
     height: number;
   } | null>(null);
   const backgroundUrlRef = useRef<string | null>(null);
+  const dragUndoCapturedRef = useRef(false);
 
   const pxLength = mmToPx(connectorLength);
 
@@ -189,6 +190,11 @@ export function EditorPane({ width, height, className }: EditorPaneProps) {
     redoStackRef.current = [];
     undoStackRef.current.push(cloneSnapshot());
   }, [cloneSnapshot]);
+  const ensureDragUndoSnapshot = useCallback(() => {
+    if (dragUndoCapturedRef.current) return;
+    pushUndoSnapshot();
+    dragUndoCapturedRef.current = true;
+  }, [pushUndoSnapshot]);
   const handleSliderPointerDown = useCallback(
     (event: ReactPointerEvent<HTMLInputElement>) => {
       if (event.button !== 0) return;
@@ -534,6 +540,7 @@ export function EditorPane({ width, height, className }: EditorPaneProps) {
       const maskIdx = hitTestMaskPoint(mask, point, 12);
       if (maskIdx !== -1) {
         setMaskSelection(maskIdx);
+        dragUndoCapturedRef.current = false;
         setDragInfo({ kind: "mask", maskIndex: maskIdx });
         setSelectedSegmentId(null);
         setSelectedConnectorId(null);
@@ -565,6 +572,7 @@ export function EditorPane({ width, height, className }: EditorPaneProps) {
         setSelectedConnectorId(null);
         setMaskSelection(null);
         setLabelEditor(null);
+        dragUndoCapturedRef.current = false;
         setDragInfo({
           kind: "segment",
           segmentIndex: endpointHit.segmentIndex,
@@ -590,6 +598,7 @@ export function EditorPane({ width, height, className }: EditorPaneProps) {
         setSelectedSegmentId(null);
         setMaskSelection(null);
         setLabelEditor(null);
+        dragUndoCapturedRef.current = false;
         setDragInfo({
           kind: "connector",
           segmentIndex: connectorEndpoint.segmentIndex,
@@ -625,6 +634,7 @@ export function EditorPane({ width, height, className }: EditorPaneProps) {
           origin: segment,
           startPointer: point,
         });
+        dragUndoCapturedRef.current = false;
         return;
       }
 
@@ -644,6 +654,7 @@ export function EditorPane({ width, height, className }: EditorPaneProps) {
         setSelectedSegmentId(null);
         setMaskSelection(null);
         setLabelEditor(null);
+        dragUndoCapturedRef.current = false;
         setDragInfo({
           kind: "connector",
           segmentIndex: connectorIndex,
@@ -700,6 +711,7 @@ export function EditorPane({ width, height, className }: EditorPaneProps) {
       const pointer = { x: event.x, y: event.y };
       if (dragInfo.kind === "mask" && dragInfo.maskIndex !== undefined) {
         const idx = dragInfo.maskIndex;
+        ensureDragUndoSnapshot();
         const nextPoints = mask.points.map((pt, i) =>
           i === idx ? pointer : pt
         );
@@ -723,6 +735,7 @@ export function EditorPane({ width, height, className }: EditorPaneProps) {
             mask
           );
           if (updated) {
+            ensureDragUndoSnapshot();
             const next = segments.slice();
             next[dragInfo.segmentIndex] = updated;
             setSegments(next);
@@ -736,6 +749,7 @@ export function EditorPane({ width, height, className }: EditorPaneProps) {
           };
           const moved = moveSegment(dragInfo.origin, delta, mask);
           if (moved) {
+            ensureDragUndoSnapshot();
             const next = segments.slice();
             next[dragInfo.segmentIndex] = moved;
             setSegments(next);
@@ -758,6 +772,7 @@ export function EditorPane({ width, height, className }: EditorPaneProps) {
             pxLength
           );
           if (updated) {
+            ensureDragUndoSnapshot();
             const next = connectors.slice();
             next[dragInfo.segmentIndex] = updated;
             setConnectors(next);
@@ -771,6 +786,7 @@ export function EditorPane({ width, height, className }: EditorPaneProps) {
           };
           const moved = moveConnector(dragInfo.origin, delta, mask);
           if (moved) {
+            ensureDragUndoSnapshot();
             const next = connectors.slice();
             next[dragInfo.segmentIndex] = moved;
             setConnectors(next);
@@ -790,7 +806,10 @@ export function EditorPane({ width, height, className }: EditorPaneProps) {
     ]
   );
 
-  const clearDrag = useCallback(() => setDragInfo(null), []);
+  const clearDrag = useCallback(() => {
+    setDragInfo(null);
+    dragUndoCapturedRef.current = false;
+  }, []);
 
   const handleKeyDown = useCallback(
     (event: ReactKeyboardEvent<HTMLCanvasElement>) => {
@@ -1028,8 +1047,8 @@ export function EditorPane({ width, height, className }: EditorPaneProps) {
           </div>
         ) : null}
       </div>
-      {backgroundImage ? (
-        <div className="pointer-events-none absolute bottom-4 right-4 z-10">
+      <div className="pointer-events-none absolute bottom-4 right-4 z-10">
+        {backgroundImage ? (
           <button
             type="button"
             className="pointer-events-auto inline-flex items-center gap-2 rounded-full border border-cyan-300/35 bg-[rgba(4,12,28,0.9)] px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.3em] text-cyan-50 shadow-lg shadow-cyan-500/15 transition hover:border-cyan-200/70 hover:bg-[rgba(12,32,64,0.95)]"
@@ -1043,8 +1062,12 @@ export function EditorPane({ width, height, className }: EditorPaneProps) {
           >
             Remove background
           </button>
-        </div>
-      ) : null}
+        ) : (
+          <div className="rounded-full px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.3em] text-cyan-100/70 ">
+            Paste image with CTRL+V to set background
+          </div>
+        )}
+      </div>
       {labelEditor && editorPosition ? (
         <input
           autoFocus
