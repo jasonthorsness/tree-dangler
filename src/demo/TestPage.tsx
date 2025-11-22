@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import type { Point } from "../lib/types";
 
 import { SimulationPane } from "../lib/panes/SimulationPane";
 import { SvgExportPane } from "../lib/panes/SvgExportPane";
@@ -10,6 +11,59 @@ import {
   serializeScene,
 } from "../lib/logic/sceneSerialization";
 
+type PresetScene = ReturnType<typeof deserializeScene>;
+
+type PresetEntry = {
+  label: string;
+  file: string;
+  scene: PresetScene | null;
+  previewDataUri?: string;
+  error?: string;
+};
+
+const PRESETS: Array<Pick<PresetEntry, "label" | "file">> = [
+  { label: "Cat", file: "cat.json" },
+  { label: "Circle", file: "circle.json" },
+  { label: "Dog", file: "dog.json" },
+  { label: "Owl", file: "owl.json" },
+  { label: "Star", file: "star.json" },
+  { label: "Tree", file: "tree.json" },
+  { label: "Triangle", file: "triangle.json" },
+  { label: "Turtle", file: "turtle.json" },
+];
+
+const formatLabelFromFile = (file: string) => {
+  const base = file.replace(/\.json$/i, "");
+  return base
+    .split(/[-_]/)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+};
+
+const buildMaskPreviewDataUri = (points: Point[] | undefined) => {
+  if (!points?.length) return undefined;
+  const xs = points.map((p) => p.x);
+  const ys = points.map((p) => p.y);
+  const minX = Math.min(...xs);
+  const maxX = Math.max(...xs);
+  const minY = Math.min(...ys);
+  const maxY = Math.max(...ys);
+  const width = Math.max(maxX - minX, 1);
+  const height = Math.max(maxY - minY, 1);
+  const scale = 16 / Math.max(width, height);
+  const offsetX = (16 - width * scale) / 2;
+  const offsetY = (16 - height * scale) / 2;
+  const normalizedPoints = points.map((p) => ({
+    x: (p.x - minX) * scale + offsetX,
+    y: (p.y - minY) * scale + offsetY,
+  }));
+  const pointsAttr = normalizedPoints
+    .map((p) => `${p.x.toFixed(2)},${p.y.toFixed(2)}`)
+    .join(" ");
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16"><rect width="16" height="16" fill="transparent"/><polygon points="${pointsAttr}" fill="#fff" /></svg>`;
+  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+};
+
 function EditorCard() {
   const width = 600;
   const height = 800;
@@ -20,16 +74,10 @@ function EditorCard() {
   );
   const [helpOpen, setHelpOpen] = useState(false);
   const [presetMenuOpen, setPresetMenuOpen] = useState(false);
+  const [presetOptions, setPresetOptions] = useState<PresetEntry[]>([]);
+  const [presetsLoading, setPresetsLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const presetMenuRef = useRef<HTMLDivElement | null>(null);
-  const presetOptions = useMemo(
-    () => [
-      { label: "Tree", file: "tree.json" },
-      { label: "Circle", file: "circle.json" },
-      { label: "Triangle", file: "triangle.json" },
-    ],
-    []
-  );
 
   useEffect(() => {
     setResetToken((token) => token + 1);
@@ -122,23 +170,82 @@ function EditorCard() {
     [dispatch]
   );
 
+  useEffect(() => {
+    let cancelled = false;
+    const loadPresets = async () => {
+      setPresetsLoading(true);
+
+      const manifest = PRESETS;
+      const resolved = await Promise.all(
+        manifest.map(async (entry) => {
+          try {
+            const resp = await fetch(entry.file);
+            if (!resp.ok) {
+              throw new Error(`HTTP ${resp.status}`);
+            }
+            const data = await resp.json();
+            const scene = deserializeScene(data);
+            const previewDataUri = buildMaskPreviewDataUri(scene?.mask.points);
+            return {
+              label:
+                entry.label && entry.label.trim().length
+                  ? entry.label
+                  : formatLabelFromFile(entry.file),
+              file: entry.file,
+              scene,
+              previewDataUri,
+            };
+          } catch (err) {
+            console.error("Failed to load preset", entry.file, err);
+            return {
+              label:
+                entry.label && entry.label.trim().length
+                  ? entry.label
+                  : formatLabelFromFile(entry.file),
+              file: entry.file,
+              scene: null,
+              previewDataUri: undefined,
+              error: (err as Error).message,
+            };
+          }
+        })
+      );
+
+      if (!cancelled) {
+        setPresetOptions(resolved.filter((item) => item.file));
+      }
+      if (!cancelled) setPresetsLoading(false);
+    };
+
+    void loadPresets();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const handleLoadFromFile = useCallback(() => {
     fileInputRef.current?.click();
   }, []);
 
   const loadPreset = useCallback(
-    async (file: string) => {
+    async (preset: { file: string; scene?: PresetScene }) => {
       try {
-        const resp = await fetch(file);
+        if (preset.scene) {
+          applySerializedScene(preset.scene);
+          return;
+        }
+        const resp = await fetch(preset.file);
         if (!resp.ok) {
-          throw new Error(`Failed to load preset ${file}: ${resp.status}`);
+          throw new Error(
+            `Failed to load preset ${preset.file}: ${resp.status}`
+          );
         }
         const data = await resp.json();
         const scene = deserializeScene(data);
         if (scene) {
           applySerializedScene(scene);
         } else {
-          console.error("Invalid preset file", file);
+          console.error("Invalid preset file", preset.file);
         }
       } catch (err) {
         console.error("Preset load error", err);
@@ -283,18 +390,40 @@ function EditorCard() {
                 </span>
               </button>
               {presetMenuOpen ? (
-                <div className="absolute right-0 z-20 mt-2 w-48 rounded-2xl border border-cyan-300/30 bg-[rgba(5,14,32,0.95)] p-2 text-xs text-[var(--ink)] shadow-2xl backdrop-blur">
+                <div className="absolute right-0 z-20 mt-2 w-52 rounded-2xl border border-cyan-300/30 bg-[rgba(5,14,32,0.95)] p-2 text-xs text-[var(--ink)] shadow-2xl backdrop-blur">
                   <div className="flex flex-col">
-                    {presetOptions.map((option) => (
-                      <button
-                        key={option.file}
-                        type="button"
-                        onClick={() => loadPreset(option.file)}
-                        className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-[12px] text-cyan-50 transition hover:bg-white/5"
-                      >
-                        {option.label}
-                      </button>
-                    ))}
+                    {presetOptions.length ? (
+                      presetOptions.map((option) => (
+                        <button
+                          key={option.file}
+                          type="button"
+                          onClick={() => loadPreset(option)}
+                          className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-[12px] text-cyan-50 transition hover:bg-white/5"
+                          title={option.file}
+                        >
+                          <span className="flex h-8 w-8 items-center justify-center ">
+                            {option.previewDataUri ? (
+                              <img
+                                src={option.previewDataUri}
+                                alt={`${option.label} preview`}
+                                className="h-6 w-6 object-contain"
+                              />
+                            ) : (
+                              <span className="text-[10px] text-cyan-100/70">
+                                N/A
+                              </span>
+                            )}
+                          </span>
+                          <span className="flex-1 truncate">
+                            {option.label}
+                          </span>
+                        </button>
+                      ))
+                    ) : (
+                      <div className="px-3 py-2 text-[12px] text-cyan-100/70">
+                        {presetsLoading ? "Loading…" : "No presets found"}
+                      </div>
+                    )}
                   </div>
                   <div className="my-1 h-px w-full bg-cyan-300/20" />
                   <button
