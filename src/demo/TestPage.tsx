@@ -1,53 +1,14 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { SimulationPane } from "../lib/panes/SimulationPane";
 import { SvgExportPane } from "../lib/panes/SvgExportPane";
 import EditorPane, { EXTERNAL_UNDO_EVENT } from "../lib/panes/EditorPane";
 import { TreeDanglerProvider, useTreeDanglerState } from "../lib/state/store";
-import { mmToPx } from "../lib/logic/connectors";
 import {
   deserializeScene,
   encodeSceneToHash,
   serializeScene,
 } from "../lib/logic/sceneSerialization";
-
-const CLEAR_MASK_POINTS = [
-  { x: mmToPx(60), y: mmToPx(30) },
-  { x: mmToPx(20), y: mmToPx(100) },
-  { x: mmToPx(100), y: mmToPx(100) },
-];
-
-const CLEAR_CONNECTOR_CENTER = { x: mmToPx(60), y: mmToPx(32) };
-const CLEAR_SEGMENT_CENTER = { x: mmToPx(60), y: mmToPx(60) };
-const DEFAULT_SEGMENT_HALF_LENGTH = 20;
-
-const createClearSegment = () => ({
-  id: crypto.randomUUID(),
-  start: {
-    x: CLEAR_SEGMENT_CENTER.x - DEFAULT_SEGMENT_HALF_LENGTH,
-    y: CLEAR_SEGMENT_CENTER.y,
-  },
-  end: {
-    x: CLEAR_SEGMENT_CENTER.x + DEFAULT_SEGMENT_HALF_LENGTH,
-    y: CLEAR_SEGMENT_CENTER.y,
-  },
-  text: "text",
-});
-
-const createClearConnector = (connectorLengthMm: number) => {
-  const halfLengthPx = mmToPx(connectorLengthMm) / 2;
-  return {
-    id: crypto.randomUUID(),
-    start: {
-      x: CLEAR_CONNECTOR_CENTER.x,
-      y: CLEAR_CONNECTOR_CENTER.y - halfLengthPx,
-    },
-    end: {
-      x: CLEAR_CONNECTOR_CENTER.x,
-      y: CLEAR_CONNECTOR_CENTER.y + halfLengthPx,
-    },
-  };
-};
 
 function EditorCard() {
   const width = 600;
@@ -58,7 +19,17 @@ function EditorCard() {
     "simulation"
   );
   const [helpOpen, setHelpOpen] = useState(false);
+  const [presetMenuOpen, setPresetMenuOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const presetMenuRef = useRef<HTMLDivElement | null>(null);
+  const presetOptions = useMemo(
+    () => [
+      { label: "Tree", file: "tree.json" },
+      { label: "Circle", file: "circle.json" },
+      { label: "Triangle", file: "triangle.json" },
+    ],
+    []
+  );
 
   useEffect(() => {
     setResetToken((token) => token + 1);
@@ -121,31 +92,6 @@ function EditorCard() {
     }
   }, [state]);
 
-  const handleLoad = useCallback(() => {
-    fileInputRef.current?.click();
-  }, []);
-
-  const handleDownloadSvg = useCallback(async () => {
-    if (!state.svgString) return;
-
-    const handle = await (window as any).showSaveFilePicker({
-      suggestedName: "tree-dangler.svg",
-      types: [
-        {
-          description: "SVG Image",
-          accept: { "image/svg+xml": [".svg"] },
-        },
-      ],
-    });
-
-    const writable = await handle.createWritable();
-    await writable.write(
-      new Blob([state.svgString], { type: "image/svg+xml" })
-    );
-    await writable.close();
-    return;
-  }, [state.svgString]);
-
   const applySerializedScene = useCallback(
     (scene: ReturnType<typeof deserializeScene>) => {
       if (!scene) return;
@@ -176,6 +122,54 @@ function EditorCard() {
     [dispatch]
   );
 
+  const handleLoadFromFile = useCallback(() => {
+    fileInputRef.current?.click();
+  }, []);
+
+  const loadPreset = useCallback(
+    async (file: string) => {
+      try {
+        const resp = await fetch(file);
+        if (!resp.ok) {
+          throw new Error(`Failed to load preset ${file}: ${resp.status}`);
+        }
+        const data = await resp.json();
+        const scene = deserializeScene(data);
+        if (scene) {
+          applySerializedScene(scene);
+        } else {
+          console.error("Invalid preset file", file);
+        }
+      } catch (err) {
+        console.error("Preset load error", err);
+      } finally {
+        setPresetMenuOpen(false);
+      }
+    },
+    [applySerializedScene]
+  );
+
+  const handleDownloadSvg = useCallback(async () => {
+    if (!state.svgString) return;
+
+    const handle = await (window as any).showSaveFilePicker({
+      suggestedName: "tree-dangler.svg",
+      types: [
+        {
+          description: "SVG Image",
+          accept: { "image/svg+xml": [".svg"] },
+        },
+      ],
+    });
+
+    const writable = await handle.createWritable();
+    await writable.write(
+      new Blob([state.svgString], { type: "image/svg+xml" })
+    );
+    await writable.close();
+    return;
+  }, [state.svgString]);
+
   const handleFileChange = useCallback(
     (event: React.ChangeEvent<HTMLInputElement>) => {
       const file = event.target.files?.[0];
@@ -199,6 +193,16 @@ function EditorCard() {
     },
     [applySerializedScene]
   );
+
+  useEffect(() => {
+    const handlePointerDown = (event: PointerEvent) => {
+      if (!presetMenuOpen) return;
+      if (presetMenuRef.current?.contains(event.target as Node)) return;
+      setPresetMenuOpen(false);
+    };
+    document.addEventListener("pointerdown", handlePointerDown);
+    return () => document.removeEventListener("pointerdown", handlePointerDown);
+  }, [presetMenuOpen]);
 
   return (
     <div className="p-6 sm:p-8 text-[var(--ink)]">
@@ -266,13 +270,46 @@ function EditorCard() {
             >
               Save
             </button>
-            <button
-              type="button"
-              onClick={handleLoad}
-              className="rounded-full border border-cyan-300/40 bg-white/5 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-cyan-50 shadow-sm shadow-cyan-500/10 transition hover:border-cyan-200/70 hover:bg-cyan-500/10"
-            >
-              Load
-            </button>
+            <div className="relative" ref={presetMenuRef}>
+              <button
+                type="button"
+                onClick={() => setPresetMenuOpen((prev) => !prev)}
+                aria-expanded={presetMenuOpen}
+                className="inline-flex items-center gap-2 rounded-full border border-cyan-300/40 bg-white/5 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-cyan-50 shadow-sm shadow-cyan-500/10 transition hover:border-cyan-200/70 hover:bg-cyan-500/10"
+              >
+                Load
+                <span className="text-lg leading-none font-mono">
+                  {presetMenuOpen ? "▲" : "▼"}
+                </span>
+              </button>
+              {presetMenuOpen ? (
+                <div className="absolute right-0 z-20 mt-2 w-48 rounded-2xl border border-cyan-300/30 bg-[rgba(5,14,32,0.95)] p-2 text-xs text-[var(--ink)] shadow-2xl backdrop-blur">
+                  <div className="flex flex-col">
+                    {presetOptions.map((option) => (
+                      <button
+                        key={option.file}
+                        type="button"
+                        onClick={() => loadPreset(option.file)}
+                        className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-[12px] text-cyan-50 transition hover:bg-white/5"
+                      >
+                        {option.label}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="my-1 h-px w-full bg-cyan-300/20" />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPresetMenuOpen(false);
+                      handleLoadFromFile();
+                    }}
+                    className="w-full rounded-xl px-3 py-2 text-left text-[12px] font-semibold text-cyan-50 transition hover:bg-cyan-500/10"
+                  >
+                    From File…
+                  </button>
+                </div>
+              ) : null}
+            </div>
             <input
               ref={fileInputRef}
               type="file"
@@ -280,35 +317,6 @@ function EditorCard() {
               className="hidden"
               onChange={handleFileChange}
             />
-            <button
-              type="button"
-              onClick={() => {
-                if (typeof window !== "undefined") {
-                  window.dispatchEvent(new Event(EXTERNAL_UNDO_EVENT));
-                }
-                const maskPayload = {
-                  id: "default-mask",
-                  points: CLEAR_MASK_POINTS.map((point) => ({ ...point })),
-                };
-                const clearSegment = createClearSegment();
-                const clearConnector = createClearConnector(
-                  state.connectorLength
-                );
-                dispatch({
-                  type: "SET_MASK",
-                  payload: maskPayload,
-                });
-                dispatch({ type: "SET_SEGMENTS", payload: [clearSegment] });
-                dispatch({ type: "SET_CONNECTORS", payload: [clearConnector] });
-                dispatch({
-                  type: "SET_DISTANCE_CONFIG",
-                  payload: { gap: 1.5, round: 2, noiseAmplitude: 3 },
-                });
-              }}
-              className="rounded-full border border-rose-400/60 bg-rose-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-rose-100 shadow-sm transition hover:border-rose-200/90 hover:bg-rose-500/15"
-            >
-              Clear
-            </button>
             <button
               type="button"
               onClick={handleDownloadSvg}

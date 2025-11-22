@@ -1,0 +1,51 @@
+{
+  "mask": {
+    "points": [
+      {
+        "x": 300,
+        "y": 150
+      },
+      {
+        "x": 100,
+        "y": 500
+      },
+      {
+        "x": 500,
+        "y": 500
+      }
+    ]
+  },
+  "segments": [
+    {
+      "start": {
+        "x": 280,
+        "y": 300
+      },
+      "end": {
+        "x": 320,
+        "y": 300
+      },
+      "text": "text"
+    }
+  ],
+  "connectors": [
+    {
+      "start": {
+        "x": 300,
+        "y": 140
+      },
+      "end": {
+        "x": 300,
+        "y": 180
+      }
+    }
+  ],
+  "noise": {
+    "gap": 1.5,
+    "round": 2,
+    "noiseAmplitude": 3,
+    "noiseSeed": 0,
+    "connectorLength": 8,
+    "holeDiameter": 2
+  }
+}

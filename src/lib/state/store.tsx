@@ -36,7 +36,7 @@ type Action =
   | { type: "SET_HOLE_DIAMETER"; payload: number }
   | { type: "SET_SVG_STRING"; payload: string };
 
-// Initial state; populated from default_scene.json on mount
+// Initial state; populated from tree.json on mount
 const initialState: TreeDanglerState = {
   mask: { id: "default-mask", points: [] },
   segments: [],
@@ -152,7 +152,7 @@ export function TreeDanglerProvider({ children }: { children: ReactNode }) {
         }
       }
       try {
-        const resp = await fetch("default_scene.json");
+        const resp = await fetch("tree.json");
         const raw = await resp.json();
         const normalized = deserializeScene({
           mask: raw.mask,
