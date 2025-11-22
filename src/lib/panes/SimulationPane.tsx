@@ -21,7 +21,7 @@ export function SimulationPane({
   onResetRequest,
 }: SimulationPaneProps) {
   const {
-    state: { piecePolygons, connectors },
+    state: { piecePolygons, connectors, holeDiameter },
   } = useTreeDanglerState();
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -136,6 +136,7 @@ export function SimulationPane({
       const world = createSimulationWorld(
         piecePolygons,
         connectors,
+        holeDiameter,
         width,
         height
       );
@@ -192,9 +193,11 @@ export function SimulationPane({
               }
 
               ctx.closePath();
-              ctx.fillStyle = "#2262a6ff";
+              ctx.fillStyle =
+                body.render.visible == true ? "#2262a6ff" : "rgba(9,32,66,0.8)";
               ctx.fill();
-              ctx.strokeStyle = "#2262a6ff";
+              ctx.strokeStyle =
+                body.render.visible == true ? "#2262a6ff" : "rgba(9,32,66,0.8)";
               ctx.lineWidth = 1.5;
               ctx.stroke();
             });

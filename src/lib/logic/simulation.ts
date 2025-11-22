@@ -8,6 +8,7 @@ import decomp from "poly-decomp";
 (Matter.Common as any).setDecomp(decomp);
 
 import type { LineSegment, Polygon } from "../types";
+import { mmToPx } from "./connectors";
 
 export interface SimulationWorld {
   engine: Matter.Engine;
@@ -18,15 +19,20 @@ export interface SimulationWorld {
 export function createSimulationWorld(
   polygons: Polygon[],
   connectors: LineSegment[],
+  holeDiameter: number,
   _width: number,
   _height: number
 ): SimulationWorld {
   const engine = Matter.Engine.create();
+  engine.constraintIterations = 500;
+  engine.positionIterations = 10;
+
   const world = engine.world;
   world.gravity.y = 1;
 
   const bodies: Matter.Body[] = [];
   const attachments: Record<string, Matter.Body | null> = {};
+  const holeRadius = mmToPx(holeDiameter - 1) / 2;
 
   polygons.forEach((poly) => {
     if (poly.points.length < 3) return;
@@ -36,7 +42,7 @@ export function createSimulationWorld(
       0,
       [vertices],
       {
-        friction: 0.5,
+        friction: 0.8,
         restitution: 0.01,
         density: 0.002,
       },
@@ -56,21 +62,63 @@ export function createSimulationWorld(
     const attachA = attachToBody(world, bodies, connector.start);
     const attachB = attachToBody(world, bodies, connector.end);
 
-    const length = Math.hypot(
-      connector.end.x - connector.start.x,
-      connector.end.y - connector.start.y
+    const circleA = Matter.Bodies.circle(
+      connector.start.x,
+      connector.start.y,
+      holeRadius,
+      {
+        collisionFilter: { mask: 0 },
+        render: { visible: false },
+      }
     );
+    const circleB = Matter.Bodies.circle(
+      connector.end.x,
+      connector.end.y,
+      holeRadius,
+      {
+        collisionFilter: { mask: 0 },
+        render: { visible: false },
+      }
+    );
+    Matter.Composite.add(world, [circleA, circleB]);
 
-    const constraint = Matter.Constraint.create({
+    const anchorA = Matter.Constraint.create({
       bodyA: attachA.body,
       pointA: attachA.point,
-      bodyB: attachB.body,
-      pointB: attachB.point,
-      length,
-      stiffness: 0.5,
+      bodyB: circleA,
+      pointB: { x: 0, y: 0 },
+      length: 0,
+      stiffness: 1.2,
       damping: 0.1,
     });
-    Matter.Composite.add(world, constraint);
+    const anchorB = Matter.Constraint.create({
+      bodyA: attachB.body,
+      pointA: attachB.point,
+      bodyB: circleB,
+      pointB: { x: 0, y: 0 },
+      length: 0,
+      stiffness: 1.2,
+      damping: 0.1,
+    });
+
+    const dx = connector.end.x - connector.start.x;
+    const dy = connector.end.y - connector.start.y;
+    const distance = Math.hypot(dx, dy);
+    const safeDistance = distance || 1;
+    const dir = { x: dx / safeDistance, y: dy / safeDistance };
+    const pointA = { x: dir.x * holeRadius, y: dir.y * holeRadius };
+    const pointB = { x: -dir.x * holeRadius, y: -dir.y * holeRadius };
+    const edgeConstraint = Matter.Constraint.create({
+      bodyA: circleA,
+      pointA,
+      bodyB: circleB,
+      pointB,
+      length: Math.max(distance - holeRadius * 2, 0),
+      stiffness: 1.2,
+      damping: 0.1,
+    });
+
+    Matter.Composite.add(world, [anchorA, anchorB, edgeConstraint]);
 
     attachments[`${idx}-start`] = attachA.isStub ? attachA.body : null;
     attachments[`${idx}-end`] = attachB.isStub ? attachB.body : null;
