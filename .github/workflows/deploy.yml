@@ -20,14 +20,18 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
+
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
+
       - name: Install dependencies
         run: npm ci
+
       - name: Build site for GitHub Pages
-        run: npm run build
+        run: npm run build -- --base=/tree-dangler/
+
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
@@ -42,6 +46,7 @@ jobs:
     permissions:
       pages: write
       id-token: write
+
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
