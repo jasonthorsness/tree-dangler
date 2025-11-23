@@ -7,12 +7,7 @@ import {
   type Dispatch,
   type ReactNode,
 } from "react";
-import {
-  TreeDanglerState,
-  MaskPolygon,
-  LineSegment,
-  Polygon,
-} from "../types";
+import { TreeDanglerState, MaskPolygon, LineSegment, Polygon } from "../types";
 import { mmToPx, resizeConnectorFromStart } from "../logic/connectors";
 import {
   decodeSceneFromHash,
@@ -46,8 +41,8 @@ const initialState: TreeDanglerState = {
   round: 2,
   noiseAmplitude: 5,
   noiseSeed: 0,
-  connectorLength: 8,
-  holeDiameter: 2,
+  connectorLength: 10,
+  holeDiameter: 1.8,
   svgString: "",
 };
 
@@ -269,12 +264,7 @@ function useWorker(
     );
     workerRef.current = worker;
     worker.onmessage = (event: MessageEvent<VoronoiWorkerMessage>) => {
-      const {
-        id,
-        piecePolygons,
-        svgString,
-        error,
-      } = event.data;
+      const { id, piecePolygons, svgString, error } = event.data;
       if (error) {
         console.error("Voronoi worker error:", error);
         return;

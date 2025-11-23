@@ -835,7 +835,7 @@
     }
   ],
   "noise": {
-    "gap": 1.5,
+    "gap": 2,
     "round": 1.4,
     "noiseAmplitude": 5,
     "noiseSeed": 6,

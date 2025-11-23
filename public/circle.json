@@ -145,11 +145,11 @@
     }
   ],
   "noise": {
-    "gap": 1.8,
+    "gap": 2,
     "round": 3,
     "noiseAmplitude": 4,
     "noiseSeed": 0,
     "connectorLength": 10,
-    "holeDiameter": 2
+    "holeDiameter": 1.8
   }
 }

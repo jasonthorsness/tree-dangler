@@ -719,7 +719,7 @@
     }
   ],
   "noise": {
-    "gap": 1.5,
+    "gap": 2,
     "round": 2,
     "noiseAmplitude": 3,
     "noiseSeed": 6,

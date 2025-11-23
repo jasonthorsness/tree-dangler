@@ -72,6 +72,7 @@ function EditorCard() {
   const [previewMode, setPreviewMode] = useState<"simulation" | "svg">(
     "simulation"
   );
+  const [isMobile, setIsMobile] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
   const [presetMenuOpen, setPresetMenuOpen] = useState(false);
   const [presetOptions, setPresetOptions] = useState<PresetEntry[]>([]);
@@ -82,6 +83,20 @@ function EditorCard() {
   useEffect(() => {
     setResetToken((token) => token + 1);
   }, [state.piecePolygons, state.connectors]);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !window.matchMedia) return;
+    const mediaQuery = window.matchMedia("(max-width: 639px)");
+    const handleChange = () => {
+      setIsMobile(mediaQuery.matches);
+      if (mediaQuery.matches) {
+        setPreviewMode("simulation");
+      }
+    };
+    handleChange();
+    mediaQuery.addEventListener("change", handleChange);
+    return () => mediaQuery.removeEventListener("change", handleChange);
+  }, []);
 
   const handleReset = useCallback(() => {
     setResetToken((token) => token + 1);
@@ -312,20 +327,25 @@ function EditorCard() {
   }, [presetMenuOpen]);
 
   return (
-    <div className="p-6 sm:p-8 text-[var(--ink)]">
-      <div className="mx-auto w-full max-w-[1200px] rounded-[28px] border glass-panel p-6 sm:p-8">
+    <div className="p-0 sm:p-8 text-[var(--ink)]">
+      <div className="mx-auto w-full max-w-[1200px] sm:rounded-[28px] border glass-panel p-2 sm:p-8">
+        {isMobile ? (
+          <div className="mb-4 rounded-2xl border border-cyan-300/30 bg-[rgba(5,14,32,0.9)] px-4 py-3 text-center text-sm font-semibold text-cyan-50 shadow-lg">
+            sorry, the editor requires a wider screen
+          </div>
+        ) : null}
         <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:gap-6">
-          <div className="flex flex-col gap-1">
+          <div className="hidden flex-col gap-1 sm:flex">
             <p className="text-[11px] font-semibold uppercase tracking-[0.4em] text-cyan-100">
               Tree Dangler
             </p>
-            <div className="text-sm text-[var(--ink-muted)]">
+            <div className="hidden text-sm text-[var(--ink-muted)] sm:block">
               {state.mask.points.length} mask points · {state.segments.length}{" "}
               segments · {state.connectors.length} connectors
             </div>
           </div>
           <div className="flex flex-wrap gap-2 sm:ml-auto sm:justify-end">
-            <div className="relative">
+            <div className="relative hidden sm:block">
               <button
                 type="button"
                 onClick={() => setHelpOpen((prev) => !prev)}
@@ -366,23 +386,23 @@ function EditorCard() {
             <button
               type="button"
               onClick={handleCopyLink}
-              className="rounded-full border border-cyan-300/40 bg-white/5 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-cyan-50 shadow-sm shadow-cyan-500/10 transition hover:border-cyan-200/70 hover:bg-cyan-500/10"
+              className="hidden rounded-full border border-cyan-300/40 bg-white/5 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-cyan-50 shadow-sm shadow-cyan-500/10 transition hover:border-cyan-200/70 hover:bg-cyan-500/10 sm:inline-flex"
             >
               Copy Link
             </button>
             <button
               type="button"
               onClick={handleSave}
-              className="rounded-full border border-cyan-300/40 bg-white/5 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-cyan-50 shadow-sm shadow-cyan-500/10 transition hover:border-cyan-200/70 hover:bg-cyan-500/10"
+              className="hidden rounded-full border border-cyan-300/40 bg-white/5 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-cyan-50 shadow-sm shadow-cyan-500/10 transition hover:border-cyan-200/70 hover:bg-cyan-500/10 sm:inline-flex"
             >
               Save
             </button>
-            <div className="relative" ref={presetMenuRef}>
+            <div className="relative w-full sm:w-auto" ref={presetMenuRef}>
               <button
                 type="button"
                 onClick={() => setPresetMenuOpen((prev) => !prev)}
                 aria-expanded={presetMenuOpen}
-                className="inline-flex items-center gap-2 rounded-full border border-cyan-300/40 bg-white/5 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-cyan-50 shadow-sm shadow-cyan-500/10 transition hover:border-cyan-200/70 hover:bg-cyan-500/10"
+                className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-cyan-300/40 bg-white/5 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-cyan-50 shadow-sm shadow-cyan-500/10 transition hover:border-cyan-200/70 hover:bg-cyan-500/10 sm:w-auto sm:py-1"
               >
                 Load
                 <span className="text-lg leading-none font-mono">
@@ -449,28 +469,30 @@ function EditorCard() {
             <button
               type="button"
               onClick={handleDownloadSvg}
-              className="rounded-full border border-transparent bg-gradient-to-r from-cyan-300 via-cyan-200 to-indigo-300 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-900 shadow-lg shadow-cyan-500/30 transition hover:shadow-indigo-500/30 disabled:from-cyan-300/50 disabled:via-cyan-200/50 disabled:to-indigo-300/50 disabled:text-slate-700 disabled:cursor-not-allowed"
+              className="hidden rounded-full border border-transparent bg-gradient-to-r from-cyan-300 via-cyan-200 to-indigo-300 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-900 shadow-lg shadow-cyan-500/30 transition hover:shadow-indigo-500/30 disabled:from-cyan-300/50 disabled:via-cyan-200/50 disabled:to-indigo-300/50 disabled:text-slate-700 disabled:cursor-not-allowed sm:inline-flex"
               disabled={!state.svgString}
             >
               Export SVG
             </button>
           </div>
         </div>
-        <div className="mt-4 grid gap-2 grid-cols-2">
-          <div className="flex flex-col gap-4">
-            <div className="flex justify-center">
-              <EditorPane
-                width={width}
-                height={height}
-                className="rounded-2xl border border-cyan-300/25 bg-[rgba(7,24,54,0.8)] shadow-2xl shadow-cyan-500/10 w-full max-w-[600px] aspect-[3/4]"
-              />
+        <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
+          {!isMobile ? (
+            <div className="flex flex-col gap-4">
+              <div className="flex justify-center">
+                <EditorPane
+                  width={width}
+                  height={height}
+                  className="rounded-2xl border border-cyan-300/25 bg-[rgba(7,24,54,0.8)] shadow-2xl shadow-cyan-500/10 w-full max-w-[600px] aspect-[3/4]"
+                />
+              </div>
             </div>
-          </div>
+          ) : null}
 
           <div className="flex flex-col gap-4">
             <div className="flex justify-center">
               <div className="relative w-full max-w-[600px]">
-                <div className="pointer-events-none absolute left-4 top-4 z-10">
+                <div className="pointer-events-none absolute left-4 top-4 z-10 hidden sm:block">
                   <div className="pointer-events-auto inline-flex items-center gap-1 rounded-full border border-cyan-300/35 bg-[rgba(8,26,54,0.85)] p-[3px] text-[11px] font-semibold uppercase tracking-[0.3em] text-cyan-50 shadow-lg shadow-cyan-500/15">
                     <button
                       type="button"
@@ -498,7 +520,7 @@ function EditorCard() {
                     </button>
                   </div>
                 </div>
-                {previewMode === "simulation" ? (
+                {previewMode === "simulation" || isMobile ? (
                   <SimulationPane
                     width={width}
                     height={height}
@@ -526,7 +548,7 @@ function EditorCard() {
 export default function TestPage() {
   return (
     <TreeDanglerProvider>
-      <div className="min-h-screen px-4 pb-12">
+      <div className="min-h-screen p-0 sm:px-4 sm:pb-12">
         <EditorCard />
       </div>
     </TreeDanglerProvider>
