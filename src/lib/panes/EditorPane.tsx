@@ -546,15 +546,15 @@ export function EditorPane({ width, height, className }: EditorPaneProps) {
         if (segment.mode === "compression") {
           const midX = (segment.start.x + segment.end.x) / 2;
           const midY = (segment.start.y + segment.end.y) / 2;
-          const size = 8;
+          const size = 12;
           ctx.beginPath();
           ctx.moveTo(midX, midY - size / 2);
           ctx.lineTo(midX + size / 2, midY);
           ctx.lineTo(midX, midY + size / 2);
           ctx.lineTo(midX - size / 2, midY);
           ctx.closePath();
-          ctx.fillStyle = selected ? "#f97316" : "#fcd34d";
-          ctx.strokeStyle = selected ? "#f97316" : "#fcd34d";
+          ctx.fillStyle = selected ? "#f97316" : "#94a3b8";
+          ctx.strokeStyle = selected ? "#f97316" : "#94a3b8";
           ctx.lineWidth = 2;
           ctx.fill();
           ctx.stroke();
@@ -937,9 +937,31 @@ export function EditorPane({ width, height, className }: EditorPaneProps) {
       }));
       dispatch({ type: "SET_MASK", payload: nextMask });
       setSegments(nextSegments);
-      setConnectors(nextConnectors);
+      const normalizedConnectors = nextConnectors.map((conn) => {
+        const dx = conn.end.x - conn.start.x;
+        const dy = conn.end.y - conn.start.y;
+        const len = Math.hypot(dx, dy) || 1;
+        const factor = pxLength / len;
+        return {
+          ...conn,
+          end: {
+            x: conn.start.x + dx * factor,
+            y: conn.start.y + dy * factor,
+          },
+        };
+      });
+      setConnectors(normalizedConnectors);
     },
-    [connectors, dispatch, mask, segments, setConnectors, setSegments, pushUndoSnapshot]
+    [
+      connectors,
+      dispatch,
+      mask,
+      pxLength,
+      segments,
+      setConnectors,
+      setSegments,
+      pushUndoSnapshot,
+    ]
   );
 
   const clearDrag = useCallback(() => {
@@ -950,6 +972,7 @@ export function EditorPane({ width, height, className }: EditorPaneProps) {
   const handleKeyDown = useCallback(
     (event: ReactKeyboardEvent<HTMLCanvasElement>) => {
       if (event.key !== "Delete" && event.key !== "Backspace") return;
+      pushUndoSnapshot();
       if (maskSelection !== null) {
         event.preventDefault();
         const updated = deleteMaskPoint(mask, maskSelection);
@@ -1238,9 +1261,7 @@ export function EditorPane({ width, height, className }: EditorPaneProps) {
       {selectedConnector ? (
         <div className="pointer-events-none absolute bottom-4 left-4 z-10">
           <div className="pointer-events-auto flex items-center gap-3 rounded-full border border-cyan-300/35 bg-[rgba(4,12,28,0.9)] px-4 py-2 text-[11px] uppercase tracking-[0.25em] text-cyan-100/80 shadow-lg shadow-cyan-500/15">
-            <span className="font-semibold text-cyan-50">
-              Connector Mode
-            </span>
+            <span className="font-semibold text-cyan-50">Connector Mode</span>
             <label className="flex items-center gap-1 text-[10px] tracking-[0.15em] text-cyan-100/80">
               <input
                 type="radio"
