@@ -254,66 +254,6 @@ export function SimulationPane({
     };
   }, [width, height, hasError]);
 
-  useEffect(() => {
-    if (
-      typeof window === "undefined" ||
-      typeof DeviceOrientationEvent === "undefined"
-    )
-      return;
-
-    let listening = false;
-
-    const clampUnit = (value: number) => Math.max(-1, Math.min(1, value));
-    const handleOrientation = (event: DeviceOrientationEvent) => {
-      const engine = engineRef.current;
-      if (!engine) return;
-      const { beta, gamma } = event;
-      if (beta == null || gamma == null) return;
-
-      const gravity = engine.world.gravity;
-      const gx = clampUnit(-Math.sin((gamma * Math.PI) / 180));
-      const gyRaw = clampUnit(Math.sin((beta * Math.PI) / 180));
-      const gy = gyRaw === 0 ? 1 : gyRaw;
-      gravity.x = gx;
-      gravity.y = gy;
-    };
-
-    const tryEnableOrientation = async () => {
-      if (listening) return;
-      try {
-        if (
-          typeof (DeviceOrientationEvent as any).requestPermission ===
-          "function"
-        ) {
-          const permission = await (
-            DeviceOrientationEvent as any
-          ).requestPermission();
-          if (permission !== "granted") {
-            return;
-          }
-        }
-        window.addEventListener("deviceorientation", handleOrientation);
-        listening = true;
-      } catch {
-        // Permission request failed; ignore and keep gravity default.
-      }
-    };
-
-    const handleUserGesture = () => {
-      void tryEnableOrientation();
-    };
-
-    void tryEnableOrientation();
-    window.addEventListener("pointerdown", handleUserGesture);
-
-    return () => {
-      window.removeEventListener("pointerdown", handleUserGesture);
-      if (listening) {
-        window.removeEventListener("deviceorientation", handleOrientation);
-      }
-    };
-  }, []);
-
   if (hasError) {
     return (
       <div
