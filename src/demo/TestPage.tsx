@@ -373,6 +373,16 @@ function EditorCard() {
                       right-click. Change the connector length in settings.
                     </li>
                     <li>
+                      Drag with the middle mouse button pressed to move. Use the
+                      mouse wheel to scale.
+                    </li>
+                    <li>
+                      If the simulation shows a connector is getting squeezed
+                      rather than pulled, select it and toggle "compression"
+                      mode which will alter the hole placement to better
+                      preserve the shape.
+                    </li>
+                    <li>
                       Once the simulation and SVG look good, export the SVG with
                       the button to the right.
                     </li>
