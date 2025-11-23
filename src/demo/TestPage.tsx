@@ -28,7 +28,6 @@ const PRESETS: Array<Pick<PresetEntry, "label" | "file">> = [
   { label: "Owl", file: "owl.json" },
   { label: "Star", file: "star.json" },
   { label: "Tree", file: "tree.json" },
-  { label: "Triangle", file: "triangle.json" },
   { label: "Turtle", file: "turtle.json" },
 ];
 
@@ -331,7 +330,7 @@ function EditorCard() {
       <div className="mx-auto w-full max-w-[1200px] sm:rounded-[28px] border glass-panel p-2 sm:p-8">
         {isMobile ? (
           <div className="mb-4 rounded-2xl border border-cyan-300/30 bg-[rgba(5,14,32,0.9)] px-4 py-3 text-center text-sm font-semibold text-cyan-50 shadow-lg">
-            sorry, the editor requires a wider screen
+            Sorry, the editor requires a wider screen.
           </div>
         ) : null}
         <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:gap-6">
@@ -411,6 +410,17 @@ function EditorCard() {
               </button>
               {presetMenuOpen ? (
                 <div className="absolute right-0 z-20 mt-2 w-52 rounded-2xl border border-cyan-300/30 bg-[rgba(5,14,32,0.95)] p-2 text-xs text-[var(--ink)] shadow-2xl backdrop-blur">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPresetMenuOpen(false);
+                      loadPreset({ file: "triangle.json" });
+                    }}
+                    className="w-full rounded-xl px-3 py-2 text-left text-[12px] font-semibold text-cyan-50 transition hover:bg-cyan-500/10"
+                  >
+                    Empty
+                  </button>
+                  <div className="my-1 h-px w-full bg-cyan-300/20" />
                   <div className="flex flex-col">
                     {presetOptions.length ? (
                       presetOptions.map((option) => (
