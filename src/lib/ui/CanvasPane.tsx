@@ -7,6 +7,13 @@ export interface PointerEventData {
   originalEvent: PointerEvent
 }
 
+export interface WheelEventData {
+  deltaX: number
+  deltaY: number
+  deltaMode: number
+  originalEvent: WheelEvent
+}
+
 export interface CanvasPaneProps {
   width: number
   height: number
@@ -18,6 +25,7 @@ export interface CanvasPaneProps {
   onPointerMove?: (event: PointerEventData) => void
   onPointerUp?: (event: PointerEventData) => void
   onPointerLeave?: (event: PointerEventData) => void
+  onWheel?: (event: WheelEventData) => void
   onKeyDown?: (event: KeyboardEvent<HTMLCanvasElement>) => void
 }
 
@@ -32,6 +40,7 @@ export function CanvasPane({
   onPointerMove,
   onPointerUp,
   onPointerLeave,
+  onWheel,
   onKeyDown,
 }: CanvasPaneProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
@@ -122,6 +131,20 @@ export function CanvasPane({
     event.preventDefault()
   }, [])
 
+  const handleWheel = useCallback(
+    (event: React.WheelEvent<HTMLCanvasElement>) => {
+      if (!onWheel) return
+      event.preventDefault()
+      onWheel({
+        deltaX: event.deltaX,
+        deltaY: event.deltaY,
+        deltaMode: event.deltaMode,
+        originalEvent: event.nativeEvent,
+      })
+    },
+    [onWheel],
+  )
+
   const resolvedTabIndex = tabIndex ?? (onKeyDown ? 0 : undefined)
 
   return (
@@ -136,6 +159,7 @@ export function CanvasPane({
       onPointerUp={handlePointerUp}
       onPointerLeave={handlePointerLeave}
       onContextMenu={handleContextMenu}
+      onWheel={handleWheel}
       onKeyDown={onKeyDown}
     />
   )

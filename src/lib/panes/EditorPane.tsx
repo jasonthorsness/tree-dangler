@@ -11,7 +11,11 @@ import {
 export const EXTERNAL_UNDO_EVENT = "tree-dangler-push-undo";
 
 import { useTreeDanglerState } from "../state/store";
-import { CanvasPane, type PointerEventData } from "../ui/CanvasPane";
+import {
+  CanvasPane,
+  type PointerEventData,
+  type WheelEventData,
+} from "../ui/CanvasPane";
 import { drawMetricRulers } from "../ui/metricGrid";
 import {
   hitTestMaskPoint,
@@ -42,12 +46,17 @@ import type {
 } from "../types";
 
 interface DragInfo {
-  kind: "mask" | "segment" | "connector";
+  kind: "mask" | "segment" | "connector" | "pan-all";
   segmentIndex?: number;
   endpoint?: "start" | "end";
   maskIndex?: number;
   origin?: LineSegment;
   startPointer?: Point;
+  snapshot?: {
+    maskPoints: Point[];
+    segments: LineSegment[];
+    connectors: LineSegment[];
+  };
 }
 
 export interface EditorPaneProps {
@@ -572,6 +581,35 @@ export function EditorPane({ width, height, className }: EditorPaneProps) {
     (event: PointerEventData) => {
       const point = { x: event.x, y: event.y };
       const isRightClick = event.buttons === 2;
+      const isMiddleClick =
+        event.originalEvent.button === 1 || (event.buttons & 4) === 4;
+
+      if (isMiddleClick) {
+        const snapshot = {
+          maskPoints: mask.points.map((pt) => ({ ...pt })),
+          segments: segments.map((seg) => ({
+            ...seg,
+            start: { ...seg.start },
+            end: { ...seg.end },
+          })),
+          connectors: connectors.map((conn) => ({
+            ...conn,
+            start: { ...conn.start },
+            end: { ...conn.end },
+          })),
+        };
+        setMaskSelection(null);
+        setSelectedSegmentId(null);
+        setSelectedConnectorId(null);
+        setLabelEditor(null);
+        dragUndoCapturedRef.current = false;
+        setDragInfo({
+          kind: "pan-all",
+          startPointer: point,
+          snapshot,
+        });
+        return;
+      }
 
       // Mask point?
       const maskIdx = hitTestMaskPoint(mask, point, 12);
@@ -746,6 +784,38 @@ export function EditorPane({ width, height, className }: EditorPaneProps) {
     (event: PointerEventData) => {
       if (!dragInfo) return;
       const pointer = { x: event.x, y: event.y };
+      if (
+        dragInfo.kind === "pan-all" &&
+        dragInfo.startPointer &&
+        dragInfo.snapshot
+      ) {
+        const delta = {
+          x: pointer.x - dragInfo.startPointer.x,
+          y: pointer.y - dragInfo.startPointer.y,
+        };
+        ensureDragUndoSnapshot();
+        const nextMask = {
+          ...mask,
+          points: dragInfo.snapshot.maskPoints.map((pt) => ({
+            x: pt.x + delta.x,
+            y: pt.y + delta.y,
+          })),
+        };
+        const nextSegments = dragInfo.snapshot.segments.map((seg) => ({
+          ...seg,
+          start: { x: seg.start.x + delta.x, y: seg.start.y + delta.y },
+          end: { x: seg.end.x + delta.x, y: seg.end.y + delta.y },
+        }));
+        const nextConnectors = dragInfo.snapshot.connectors.map((conn) => ({
+          ...conn,
+          start: { x: conn.start.x + delta.x, y: conn.start.y + delta.y },
+          end: { x: conn.end.x + delta.x, y: conn.end.y + delta.y },
+        }));
+        dispatch({ type: "SET_MASK", payload: nextMask });
+        setSegments(nextSegments);
+        setConnectors(nextConnectors);
+        return;
+      }
       if (dragInfo.kind === "mask" && dragInfo.maskIndex !== undefined) {
         const idx = dragInfo.maskIndex;
         ensureDragUndoSnapshot();
@@ -835,12 +905,41 @@ export function EditorPane({ width, height, className }: EditorPaneProps) {
       connectors,
       dragInfo,
       dispatch,
+      ensureDragUndoSnapshot,
       mask,
       pxLength,
       segments,
       setConnectors,
       setSegments,
     ]
+  );
+
+  const handleWheel = useCallback(
+    (event: WheelEventData) => {
+      const zoomIn = event.deltaY < 0;
+      const scaleFactor = zoomIn ? 1.05 : 0.95;
+      if (scaleFactor === 1) return;
+      pushUndoSnapshot();
+      const scalePoint = (pt: Point) => ({
+        x: pt.x * scaleFactor,
+        y: pt.y * scaleFactor,
+      });
+      const nextMask = { ...mask, points: mask.points.map(scalePoint) };
+      const nextSegments = segments.map((seg) => ({
+        ...seg,
+        start: scalePoint(seg.start),
+        end: scalePoint(seg.end),
+      }));
+      const nextConnectors = connectors.map((conn) => ({
+        ...conn,
+        start: scalePoint(conn.start),
+        end: scalePoint(conn.end),
+      }));
+      dispatch({ type: "SET_MASK", payload: nextMask });
+      setSegments(nextSegments);
+      setConnectors(nextConnectors);
+    },
+    [connectors, dispatch, mask, segments, setConnectors, setSegments, pushUndoSnapshot]
   );
 
   const clearDrag = useCallback(() => {
@@ -942,6 +1041,7 @@ export function EditorPane({ width, height, className }: EditorPaneProps) {
         onPointerMove={handlePointerMove}
         onPointerUp={clearDrag}
         onPointerLeave={clearDrag}
+        onWheel={handleWheel}
         onKeyDown={handleKeyDown}
       />
       <div className="pointer-events-none absolute right-4 top-4 z-10 flex flex-col items-end gap-2">
