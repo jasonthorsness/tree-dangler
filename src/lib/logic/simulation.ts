@@ -8,13 +8,15 @@ import decomp from "poly-decomp";
 (Matter.Common as any).setDecomp(decomp);
 
 import type { LineSegment, Polygon } from "../types";
-import { mmToPx } from "./connectors";
+import { applyCompressionOffset, mmToPx } from "./connectors";
 
 export interface SimulationWorld {
   engine: Matter.Engine;
   destroy: () => void;
   attachments: Record<string, Matter.Body | null>;
 }
+
+const WIRE_THICKNESS_MM = 1;
 
 export function createSimulationWorld(
   polygons: Polygon[],
@@ -32,7 +34,8 @@ export function createSimulationWorld(
 
   const bodies: Matter.Body[] = [];
   const attachments: Record<string, Matter.Body | null> = {};
-  const holeRadius = mmToPx(holeDiameter - 1) / 2;
+  const holeRadius = mmToPx(holeDiameter - WIRE_THICKNESS_MM) / 2;
+  const compressionOffsetPx = mmToPx((holeDiameter - WIRE_THICKNESS_MM) * 2);
 
   polygons.forEach((poly) => {
     if (poly.points.length < 3) return;
@@ -59,27 +62,21 @@ export function createSimulationWorld(
   Matter.Composite.add(world, bodies);
 
   connectors.forEach((connector, idx) => {
-    const attachA = attachToBody(world, bodies, connector.start);
-    const attachB = attachToBody(world, bodies, connector.end);
+    const adjusted = applyCompressionOffset(connector, compressionOffsetPx);
+    const start = adjusted.start;
+    const end = adjusted.end;
 
-    const circleA = Matter.Bodies.circle(
-      connector.start.x,
-      connector.start.y,
-      holeRadius,
-      {
-        collisionFilter: { mask: 0 },
-        render: { visible: false },
-      }
-    );
-    const circleB = Matter.Bodies.circle(
-      connector.end.x,
-      connector.end.y,
-      holeRadius,
-      {
-        collisionFilter: { mask: 0 },
-        render: { visible: false },
-      }
-    );
+    const attachA = attachToBody(world, bodies, start);
+    const attachB = attachToBody(world, bodies, end);
+
+    const circleA = Matter.Bodies.circle(start.x, start.y, holeRadius, {
+      collisionFilter: { mask: 0 },
+      render: { visible: false },
+    });
+    const circleB = Matter.Bodies.circle(end.x, end.y, holeRadius, {
+      collisionFilter: { mask: 0 },
+      render: { visible: false },
+    });
     Matter.Composite.add(world, [circleA, circleB]);
 
     const anchorA = Matter.Constraint.create({
@@ -101,8 +98,8 @@ export function createSimulationWorld(
       damping: 0.1,
     });
 
-    const dx = connector.end.x - connector.start.x;
-    const dy = connector.end.y - connector.start.y;
+    const dx = end.x - start.x;
+    const dy = end.y - start.y;
     const distance = Math.hypot(dx, dy);
     const safeDistance = distance || 1;
     const dir = { x: dx / safeDistance, y: dy / safeDistance };
@@ -113,7 +110,12 @@ export function createSimulationWorld(
       pointA,
       bodyB: circleB,
       pointB,
-      length: Math.max(distance - holeRadius * 2, 0),
+      length:
+        Math.hypot(
+          connector.start.x - connector.end.x,
+          connector.start.y - connector.end.y
+        ) -
+        holeRadius * 2,
       stiffness: 1.2,
       damping: 0.1,
     });

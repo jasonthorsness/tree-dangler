@@ -28,6 +28,7 @@ export function createConnectorAtPoint(
     id: crypto.randomUUID(),
     start,
     end,
+    mode: "tension",
   };
 }
 
@@ -100,4 +101,32 @@ export function moveConnectorEndpoint(
     return { ...segment, start: newPoint };
   }
   return { ...segment, end: newPoint };
+}
+
+export function applyCompressionOffset(
+  connector: LineSegment,
+  totalOffsetPx: number
+): LineSegment {
+  if (connector.mode !== "compression") return connector;
+
+  const dx = connector.end.x - connector.start.x;
+  const dy = connector.end.y - connector.start.y;
+  const distance = Math.hypot(dx, dy);
+  if (!distance) return connector;
+
+  const halfOffset = Math.min(totalOffsetPx / 2, distance / 2);
+  const ux = dx / distance;
+  const uy = dy / distance;
+
+  return {
+    ...connector,
+    start: {
+      x: connector.start.x + ux * halfOffset,
+      y: connector.start.y + uy * halfOffset,
+    },
+    end: {
+      x: connector.end.x - ux * halfOffset,
+      y: connector.end.y - uy * halfOffset,
+    },
+  };
 }

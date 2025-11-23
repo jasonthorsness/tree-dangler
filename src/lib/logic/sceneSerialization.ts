@@ -14,6 +14,7 @@ type SerializedSegment = {
 type SerializedConnector = {
   start: SerializedPoint;
   end: SerializedPoint;
+  mode?: "tension" | "compression";
 };
 
 export type SerializedScene = {
@@ -80,6 +81,7 @@ export function serializeScene(state: TreeDanglerState): SerializedScene {
     connectors: state.connectors.map((connector) => ({
       start: serializePoint(connector.start),
       end: serializePoint(connector.end),
+      mode: connector.mode === "compression" ? "compression" : "tension",
     })),
     noise: {
       gap: roundToTwoDecimals(state.gap),
@@ -133,6 +135,7 @@ export function deserializeScene(input: unknown): NormalizedScene | null {
         id: crypto.randomUUID(),
         start,
         end,
+        mode: connector?.mode === "compression" ? "compression" : "tension",
       });
       return acc;
     },

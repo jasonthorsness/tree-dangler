@@ -198,7 +198,7 @@ export function SimulationPane({
               ctx.fill();
               ctx.strokeStyle =
                 body.render.visible == true ? "#2262a6ff" : "rgba(9,32,66,0.8)";
-              ctx.lineWidth = 1.5;
+              ctx.lineWidth = body.render.visible == true ? 1.5 : 4;
               ctx.stroke();
             });
           });

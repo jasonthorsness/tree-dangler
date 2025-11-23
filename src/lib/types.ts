@@ -8,6 +8,7 @@ export interface LineSegment {
   start: Point;
   end: Point;
   text?: string;
+  mode?: "tension" | "compression";
 }
 
 export interface Polygon {

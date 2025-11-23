@@ -1,5 +1,6 @@
 import { line, curveCatmullRomClosed } from "d3-shape";
 import type { LineSegment, Polygon } from "../types";
+import { applyCompressionOffset, mmToPx } from "./connectors";
 
 const MM_TO_PX = 5;
 const HOLE_STROKE_MM = 0.18;
@@ -63,6 +64,8 @@ function catmullRomPath(points: { x: number; y: number }[]): string {
   return d ? `${d} Z` : "";
 }
 
+const WIRE_THICKNESS_MM = 1;
+
 export function generateSVG(
   polygons: Polygon[],
   connectors: LineSegment[],
@@ -85,7 +88,10 @@ export function generateSVG(
     .filter(Boolean)
     .join("\n");
 
+  const compressionOffsetPx = mmToPx((holeDiameterMm - WIRE_THICKNESS_MM) * 2);
+
   const holes = connectors
+    .map((connector) => applyCompressionOffset(connector, compressionOffsetPx))
     .flatMap((connector) => [connector.start, connector.end])
     .map((point) => {
       const radius = Math.max(holeDiameterMm / 2 - HOLE_STROKE_MM / 2, 0);

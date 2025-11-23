@@ -132,6 +132,12 @@ export function EditorPane({ width, height, className }: EditorPaneProps) {
   const dragUndoCapturedRef = useRef(false);
 
   const pxLength = mmToPx(connectorLength);
+  const selectedConnector = useMemo(
+    () =>
+      connectors.find((connector) => connector.id === selectedConnectorId) ??
+      null,
+    [connectors, selectedConnectorId]
+  );
 
   const setSegments = useCallback(
     (next: LineSegment[]) => dispatch({ type: "SET_SEGMENTS", payload: next }),
@@ -195,6 +201,20 @@ export function EditorPane({ width, height, className }: EditorPaneProps) {
     pushUndoSnapshot();
     dragUndoCapturedRef.current = true;
   }, [pushUndoSnapshot]);
+  const setConnectorMode = useCallback(
+    (mode: "tension" | "compression") => {
+      if (!selectedConnectorId) return;
+      const index = connectors.findIndex(
+        (connector) => connector.id === selectedConnectorId
+      );
+      if (index === -1) return;
+      pushUndoSnapshot();
+      const next = connectors.slice();
+      next[index] = { ...next[index], mode };
+      setConnectors(next);
+    },
+    [connectors, selectedConnectorId, setConnectors, pushUndoSnapshot]
+  );
   const handleSliderPointerDown = useCallback(
     (event: ReactPointerEvent<HTMLInputElement>) => {
       if (event.button !== 0) return;
@@ -513,6 +533,23 @@ export function EditorPane({ width, height, className }: EditorPaneProps) {
           ctx.fill();
           ctx.stroke();
         });
+
+        if (segment.mode === "compression") {
+          const midX = (segment.start.x + segment.end.x) / 2;
+          const midY = (segment.start.y + segment.end.y) / 2;
+          const size = 8;
+          ctx.beginPath();
+          ctx.moveTo(midX, midY - size / 2);
+          ctx.lineTo(midX + size / 2, midY);
+          ctx.lineTo(midX, midY + size / 2);
+          ctx.lineTo(midX - size / 2, midY);
+          ctx.closePath();
+          ctx.fillStyle = selected ? "#f97316" : "#fcd34d";
+          ctx.strokeStyle = selected ? "#f97316" : "#fcd34d";
+          ctx.lineWidth = 2;
+          ctx.fill();
+          ctx.stroke();
+        }
       });
 
       drawMetricRulers(ctx, width, height);
@@ -1097,6 +1134,39 @@ export function EditorPane({ width, height, className }: EditorPaneProps) {
             }
           }}
         />
+      ) : null}
+      {selectedConnector ? (
+        <div className="pointer-events-none absolute bottom-4 left-4 z-10">
+          <div className="pointer-events-auto flex items-center gap-3 rounded-full border border-cyan-300/35 bg-[rgba(4,12,28,0.9)] px-4 py-2 text-[11px] uppercase tracking-[0.25em] text-cyan-100/80 shadow-lg shadow-cyan-500/15">
+            <span className="font-semibold text-cyan-50">
+              Connector Mode
+            </span>
+            <label className="flex items-center gap-1 text-[10px] tracking-[0.15em] text-cyan-100/80">
+              <input
+                type="radio"
+                name="connector-mode"
+                className="accent-cyan-300"
+                checked={selectedConnector.mode !== "compression"}
+                onChange={() => setConnectorMode("tension")}
+              />
+              <span className="normal-case text-[11px] tracking-[0.05em]">
+                Tension
+              </span>
+            </label>
+            <label className="flex items-center gap-1 text-[10px] tracking-[0.15em] text-cyan-100/80">
+              <input
+                type="radio"
+                name="connector-mode"
+                className="accent-cyan-300"
+                checked={selectedConnector.mode === "compression"}
+                onChange={() => setConnectorMode("compression")}
+              />
+              <span className="normal-case text-[11px] tracking-[0.05em]">
+                Compression
+              </span>
+            </label>
+          </div>
+        </div>
       ) : null}
     </div>
   );
