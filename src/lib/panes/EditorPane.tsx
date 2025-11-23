@@ -918,7 +918,6 @@ export function EditorPane({ width, height, className }: EditorPaneProps) {
     (event: WheelEventData) => {
       const zoomIn = event.deltaY < 0;
       const scaleFactor = zoomIn ? 1.05 : 0.95;
-      if (scaleFactor === 1) return;
       pushUndoSnapshot();
       const scalePoint = (pt: Point) => ({
         x: pt.x * scaleFactor,
