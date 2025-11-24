@@ -10,15 +10,11 @@ Tree Dangler helps you create a dangling ornament from laser-cut wood pieces hel
 
 [![tree-dangler](/img/tree-dangler.gif)](https://jasonthorsness.github.io/tree-dangler/)
 
-Here is an example finished ornament:
+Here is an example finished ornament hanging from a ribbon and also held in front of the simulation. The error is parallax; it matches the simulation almost perfectly.
 
 ![example-1](/img/example-1.jpg)
 
-And here is how closely it matches the simulation. The apparent error here is mostly parallax; it is very close.
-
-![example-2](/img/example-2.jpg)
-
-You might think, this seems easy, why go to the trouble of writing a computer program to do this? That's what I thought too, until I tried three times to _manually create_ this tree ornament. What I found is that some rings are under tension, some are under compression, and with the loose fit it's actually incredibly difficult to predict how the final result will hang. I failed miserably: pieces touched, uneven gaps, the whole thing was askew. So if you have incredible intuition for physics, you don't need this program. But if you need some help like I did, and want a perfect result every time, read on!
+You might think, this seems easy, why go to the trouble of writing a computer program to do this? That's what I thought too, until I tried three times to _manually create_ this tree ornament. What I found is that some rings are under tension, some are under compression, and with the loose fit it's actually incredibly difficult to predict how the final result will hang. I failed miserably: pieces touched, uneven gaps, the whole thing was askew. So if you have incredible intuition for physics, you might not need this program. But if you need some help like I did, and want a perfect result every time, read on!
 
 ## How To Make An Ornament
 
