@@ -359,6 +359,17 @@ function EditorCard() {
                 <div className="absolute left-0 top-full z-20 mt-2 w-72 rounded-2xl border border-cyan-300/30 bg-[rgba(5,14,32,0.95)] p-4 text-xs text-[var(--ink)] shadow-2xl backdrop-blur">
                   <ol className="mt-3 space-y-3 list-decimal pl-4 text-left text-[12px] leading-relaxed text-[var(--ink-muted)]">
                     <li>
+                      For an in-depth tutorial{" "}
+                      <a
+                        href="https://github.com/jasonthorsness/tree-dangler/?tab=readme-ov-file#how-to-make-an-ornament"
+                        target="_blank"
+                        rel="noreferrer"
+                        className="underline hover:text-cyan-200"
+                      >
+                        visit here.
+                      </a>
+                    </li>
+                    <li>
                       Define the overall shape using the green outline. To add a
                       new point, click on a line.
                     </li>
