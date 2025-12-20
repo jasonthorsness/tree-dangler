@@ -28,6 +28,7 @@ const PRESETS: Array<Pick<PresetEntry, "label" | "file">> = [
   { label: "Owl", file: "owl.json" },
   { label: "Star", file: "star.json" },
   { label: "Tree", file: "tree.json" },
+  { label: "Tree 2", file: "tree-2.json" },
   { label: "Turtle", file: "turtle.json" },
 ];
 
